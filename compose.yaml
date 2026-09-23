@@ -1,0 +1,9 @@
+services:
+  mongodb:
+    image: 'mongo:8.0'
+    environment:
+      - 'MONGO_INITDB_DATABASE=car_marketplace'
+      - 'MONGO_INITDB_ROOT_USERNAME=root'
+      - 'MONGO_INITDB_ROOT_PASSWORD=secret'
+    ports:
+      - '27017:27017'
