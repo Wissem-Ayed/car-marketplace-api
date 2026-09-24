@@ -5,7 +5,7 @@ import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 
-public record CreateCarRequest(
+public record CarRequest(
         @NotBlank @Size(max = 50) String brand,
         @NotBlank @Size(max = 50) String model,
         @NotNull @Min(1886) @Max(2100) Integer year,

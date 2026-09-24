@@ -18,12 +18,27 @@ public class CarService {
         return carRepository.save(car);
     }
 
-    public Car getCar(String carId){
-        return  carRepository.findById(carId).orElseThrow(()->new CarNotFoundException(carId));
+    public Car getCar(String carId) {
+        return carRepository.findById(carId).orElseThrow(() -> new CarNotFoundException(carId));
     }
 
     public Page<Car> getCars(CarSearchCriteria carSearchCriteria, Pageable pageable) {
         return carRepository.search(carSearchCriteria, pageable);
     }
 
+    public Car updateCar(String id, Car car) {
+        ensureExists(id);
+        return carRepository.save(car.withId(id));
+    }
+
+    public void deleteCar(String id) {
+        ensureExists(id);
+        carRepository.deleteById(id);
+    }
+
+    private void ensureExists(String id) {
+        if (!carRepository.existsById(id)) {
+            throw new CarNotFoundException(id);
+        }
+    }
 }

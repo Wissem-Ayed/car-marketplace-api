@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedModel;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -23,7 +24,7 @@ public class CarController {
     private final CarService carService;
 
     @PostMapping
-    public ResponseEntity<Car> create(@Valid @RequestBody CreateCarRequest request) {
+    public ResponseEntity<Car> create(@Valid @RequestBody CarRequest request) {
         Car created = carService.saveCar(request.toCar());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -44,5 +45,14 @@ public class CarController {
         return new PagedModel<>(carService.getCars(criteria, pageable));
     }
 
+    @PutMapping("/{id}")
+    public Car updateCar(@PathVariable String id, @Valid @RequestBody CarRequest request) {
+        return carService.updateCar(id, request.toCar());
+    }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCar(@PathVariable String id) {
+        carService.deleteCar(id);
+    }
 }
