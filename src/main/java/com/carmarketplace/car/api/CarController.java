@@ -2,8 +2,13 @@ package com.carmarketplace.car.api;
 
 import com.carmarketplace.car.application.CarService;
 import com.carmarketplace.car.domain.Car;
+import com.carmarketplace.car.domain.CarSearchCriteria;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -18,17 +23,26 @@ public class CarController {
     private final CarService carService;
 
     @PostMapping
-    public ResponseEntity<Car> create(@Valid @RequestBody CreateCarRequest request){
-          Car created = carService.saveCar(request.toCar());
-          URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                  .path("/{id}")
-                  .buildAndExpand(created.id())
-                  .toUri();
-    return ResponseEntity.created(location).body(created);
+    public ResponseEntity<Car> create(@Valid @RequestBody CreateCarRequest request) {
+        Car created = carService.saveCar(request.toCar());
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(created.id())
+                .toUri();
+        return ResponseEntity.created(location).body(created);
     }
 
     @GetMapping("/{id}")
-    public Car getCar(@PathVariable String id){
+    public Car getCar(@PathVariable String id) {
         return carService.getCar(id);
     }
+
+    @GetMapping
+    public PagedModel<Car> getCars(
+            CarSearchCriteria criteria,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+        return new PagedModel<>(carService.getCars(criteria, pageable));
+    }
+
+
 }
