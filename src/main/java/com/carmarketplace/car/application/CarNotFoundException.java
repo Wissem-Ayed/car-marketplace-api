@@ -1,8 +1,10 @@
 package com.carmarketplace.car.application;
 
-public class CarNotFoundException extends RuntimeException{
+import com.carmarketplace.common.domain.NotFoundException;
 
-        public CarNotFoundException(String id) {
-            super("Car with id '%s' was not found".formatted(id));
-        }
+public class CarNotFoundException extends NotFoundException {
+
+    public CarNotFoundException(String id) {
+        super("Car with id '%s' was not found".formatted(id));
+    }
 }

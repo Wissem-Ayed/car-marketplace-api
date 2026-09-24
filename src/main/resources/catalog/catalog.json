@@ -1,0 +1,590 @@
+{
+  "brands": [
+    {
+      "id": "audi",
+      "name": "Audi",
+      "models": [
+        { "id": "audi-a1", "name": "A1", "generations": [
+          { "id": "8x", "name": "8X", "fromYear": 2010, "toYear": 2018 },
+          { "id": "gb", "name": "GB", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "audi-a3", "name": "A3", "generations": [
+          { "id": "8p", "name": "8P", "fromYear": 2003, "toYear": 2012 },
+          { "id": "8v", "name": "8V", "fromYear": 2012, "toYear": 2020 },
+          { "id": "8y", "name": "8Y", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "audi-a4", "name": "A4", "generations": [
+          { "id": "b7", "name": "B7", "fromYear": 2004, "toYear": 2008 },
+          { "id": "b8", "name": "B8", "fromYear": 2007, "toYear": 2015 },
+          { "id": "b9", "name": "B9", "fromYear": 2015, "toYear": null }
+        ] },
+        { "id": "audi-a6", "name": "A6", "generations": [
+          { "id": "c6", "name": "C6", "fromYear": 2004, "toYear": 2011 },
+          { "id": "c7", "name": "C7", "fromYear": 2011, "toYear": 2018 },
+          { "id": "c8", "name": "C8", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "audi-q3", "name": "Q3", "generations": [
+          { "id": "8u", "name": "8U", "fromYear": 2011, "toYear": 2018 },
+          { "id": "f3", "name": "F3", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "audi-q5", "name": "Q5", "generations": [
+          { "id": "8r", "name": "8R", "fromYear": 2008, "toYear": 2017 },
+          { "id": "fy", "name": "FY", "fromYear": 2017, "toYear": null }
+        ] },
+        { "id": "audi-q7", "name": "Q7", "generations": [
+          { "id": "4l", "name": "4L", "fromYear": 2005, "toYear": 2015 },
+          { "id": "4m", "name": "4M", "fromYear": 2015, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "bmw",
+      "name": "BMW",
+      "models": [
+        { "id": "bmw-serie-1", "name": "Série 1", "generations": [
+          { "id": "e87", "name": "E87", "fromYear": 2004, "toYear": 2011 },
+          { "id": "f20", "name": "F20", "fromYear": 2011, "toYear": 2019 },
+          { "id": "f40", "name": "F40", "fromYear": 2019, "toYear": 2024 },
+          { "id": "f70", "name": "F70", "fromYear": 2024, "toYear": null }
+        ] },
+        { "id": "bmw-serie-3", "name": "Série 3", "generations": [
+          { "id": "e90", "name": "E90", "fromYear": 2005, "toYear": 2012 },
+          { "id": "f30", "name": "F30", "fromYear": 2012, "toYear": 2019 },
+          { "id": "g20", "name": "G20", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "bmw-serie-5", "name": "Série 5", "generations": [
+          { "id": "e60", "name": "E60", "fromYear": 2003, "toYear": 2010 },
+          { "id": "f10", "name": "F10", "fromYear": 2010, "toYear": 2017 },
+          { "id": "g30", "name": "G30", "fromYear": 2017, "toYear": 2023 },
+          { "id": "g60", "name": "G60", "fromYear": 2023, "toYear": null }
+        ] },
+        { "id": "bmw-x1", "name": "X1", "generations": [
+          { "id": "e84", "name": "E84", "fromYear": 2009, "toYear": 2015 },
+          { "id": "f48", "name": "F48", "fromYear": 2015, "toYear": 2022 },
+          { "id": "u11", "name": "U11", "fromYear": 2022, "toYear": null }
+        ] },
+        { "id": "bmw-x3", "name": "X3", "generations": [
+          { "id": "e83", "name": "E83", "fromYear": 2003, "toYear": 2010 },
+          { "id": "f25", "name": "F25", "fromYear": 2010, "toYear": 2017 },
+          { "id": "g01", "name": "G01", "fromYear": 2017, "toYear": 2024 },
+          { "id": "g45", "name": "G45", "fromYear": 2024, "toYear": null }
+        ] },
+        { "id": "bmw-x5", "name": "X5", "generations": [
+          { "id": "e70", "name": "E70", "fromYear": 2006, "toYear": 2013 },
+          { "id": "f15", "name": "F15", "fromYear": 2013, "toYear": 2018 },
+          { "id": "g05", "name": "G05", "fromYear": 2018, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "chery",
+      "name": "Chery",
+      "models": [
+        { "id": "chery-arrizo-5", "name": "Arrizo 5", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2015, "toYear": null }
+        ] },
+        { "id": "chery-tiggo-4-pro", "name": "Tiggo 4 Pro", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "chery-tiggo-7-pro", "name": "Tiggo 7 Pro", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "chery-tiggo-8-pro", "name": "Tiggo 8 Pro", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2021, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "citroen",
+      "name": "Citroën",
+      "models": [
+        { "id": "citroen-berlingo", "name": "Berlingo", "generations": [
+          { "id": "gen-2", "name": "Berlingo II", "fromYear": 2008, "toYear": 2018 },
+          { "id": "gen-3", "name": "Berlingo III", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "citroen-c3", "name": "C3", "generations": [
+          { "id": "gen-2", "name": "C3 II", "fromYear": 2009, "toYear": 2016 },
+          { "id": "gen-3", "name": "C3 III", "fromYear": 2016, "toYear": 2024 },
+          { "id": "gen-4", "name": "C3 IV", "fromYear": 2024, "toYear": null }
+        ] },
+        { "id": "citroen-c4", "name": "C4", "generations": [
+          { "id": "gen-2", "name": "C4 II", "fromYear": 2010, "toYear": 2018 },
+          { "id": "gen-3", "name": "C4 III", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "citroen-c5-aircross", "name": "C5 Aircross", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "citroen-c-elysee", "name": "C-Elysée", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2012, "toYear": 2022 }
+        ] }
+      ]
+    },
+    {
+      "id": "dacia",
+      "name": "Dacia",
+      "models": [
+        { "id": "dacia-duster", "name": "Duster", "generations": [
+          { "id": "gen-1", "name": "Duster I", "fromYear": 2010, "toYear": 2017 },
+          { "id": "gen-2", "name": "Duster II", "fromYear": 2017, "toYear": 2024 },
+          { "id": "gen-3", "name": "Duster III", "fromYear": 2024, "toYear": null }
+        ] },
+        { "id": "dacia-jogger", "name": "Jogger", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2021, "toYear": null }
+        ] },
+        { "id": "dacia-logan", "name": "Logan", "generations": [
+          { "id": "gen-1", "name": "Logan I", "fromYear": 2004, "toYear": 2012 },
+          { "id": "gen-2", "name": "Logan II", "fromYear": 2012, "toYear": 2020 },
+          { "id": "gen-3", "name": "Logan III", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "dacia-sandero", "name": "Sandero", "generations": [
+          { "id": "gen-1", "name": "Sandero I", "fromYear": 2008, "toYear": 2012 },
+          { "id": "gen-2", "name": "Sandero II", "fromYear": 2012, "toYear": 2020 },
+          { "id": "gen-3", "name": "Sandero III", "fromYear": 2020, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "fiat",
+      "name": "Fiat",
+      "models": [
+        { "id": "fiat-500", "name": "500", "generations": [
+          { "id": "312", "name": "312", "fromYear": 2007, "toYear": null }
+        ] },
+        { "id": "fiat-doblo", "name": "Doblò", "generations": [
+          { "id": "gen-2", "name": "Doblò II", "fromYear": 2010, "toYear": 2022 },
+          { "id": "gen-3", "name": "Doblò III", "fromYear": 2022, "toYear": null }
+        ] },
+        { "id": "fiat-panda", "name": "Panda", "generations": [
+          { "id": "319", "name": "Panda III (319)", "fromYear": 2011, "toYear": null }
+        ] },
+        { "id": "fiat-punto", "name": "Punto", "generations": [
+          { "id": "199", "name": "Grande Punto / Punto (199)", "fromYear": 2005, "toYear": 2018 }
+        ] },
+        { "id": "fiat-tipo", "name": "Tipo", "generations": [
+          { "id": "356", "name": "356", "fromYear": 2015, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "ford",
+      "name": "Ford",
+      "models": [
+        { "id": "ford-ecosport", "name": "EcoSport", "generations": [
+          { "id": "gen-2", "name": "2nd generation", "fromYear": 2012, "toYear": 2022 }
+        ] },
+        { "id": "ford-fiesta", "name": "Fiesta", "generations": [
+          { "id": "mk6", "name": "Mk6", "fromYear": 2008, "toYear": 2017 },
+          { "id": "mk7", "name": "Mk7", "fromYear": 2017, "toYear": 2023 }
+        ] },
+        { "id": "ford-focus", "name": "Focus", "generations": [
+          { "id": "mk2", "name": "Mk2", "fromYear": 2004, "toYear": 2011 },
+          { "id": "mk3", "name": "Mk3", "fromYear": 2011, "toYear": 2018 },
+          { "id": "mk4", "name": "Mk4", "fromYear": 2018, "toYear": 2025 }
+        ] },
+        { "id": "ford-kuga", "name": "Kuga", "generations": [
+          { "id": "gen-1", "name": "Kuga I", "fromYear": 2008, "toYear": 2012 },
+          { "id": "gen-2", "name": "Kuga II", "fromYear": 2012, "toYear": 2019 },
+          { "id": "gen-3", "name": "Kuga III", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "ford-ranger", "name": "Ranger", "generations": [
+          { "id": "t6", "name": "T6", "fromYear": 2011, "toYear": 2022 },
+          { "id": "p703", "name": "P703", "fromYear": 2022, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "haval",
+      "name": "Haval",
+      "models": [
+        { "id": "haval-h6", "name": "H6", "generations": [
+          { "id": "gen-3", "name": "3rd generation", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "haval-jolion", "name": "Jolion", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2020, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "hyundai",
+      "name": "Hyundai",
+      "models": [
+        { "id": "hyundai-accent", "name": "Accent", "generations": [
+          { "id": "rb", "name": "RB", "fromYear": 2010, "toYear": 2017 },
+          { "id": "hc", "name": "HC", "fromYear": 2017, "toYear": 2022 }
+        ] },
+        { "id": "hyundai-creta", "name": "Creta", "generations": [
+          { "id": "gs", "name": "GS", "fromYear": 2014, "toYear": 2020 },
+          { "id": "su2", "name": "SU2", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "hyundai-elantra", "name": "Elantra", "generations": [
+          { "id": "md", "name": "MD", "fromYear": 2010, "toYear": 2015 },
+          { "id": "ad", "name": "AD", "fromYear": 2015, "toYear": 2020 },
+          { "id": "cn7", "name": "CN7", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "hyundai-i10", "name": "i10", "generations": [
+          { "id": "gen-2", "name": "i10 II", "fromYear": 2013, "toYear": 2019 },
+          { "id": "gen-3", "name": "i10 III", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "hyundai-i20", "name": "i20", "generations": [
+          { "id": "gen-2", "name": "i20 II", "fromYear": 2014, "toYear": 2020 },
+          { "id": "gen-3", "name": "i20 III", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "hyundai-santa-fe", "name": "Santa Fe", "generations": [
+          { "id": "dm", "name": "DM", "fromYear": 2012, "toYear": 2018 },
+          { "id": "tm", "name": "TM", "fromYear": 2018, "toYear": 2023 },
+          { "id": "mx5", "name": "MX5", "fromYear": 2023, "toYear": null }
+        ] },
+        { "id": "hyundai-tucson", "name": "Tucson", "generations": [
+          { "id": "tl", "name": "TL", "fromYear": 2015, "toYear": 2020 },
+          { "id": "nx4", "name": "NX4", "fromYear": 2020, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "kia",
+      "name": "Kia",
+      "models": [
+        { "id": "kia-cerato", "name": "Cerato", "generations": [
+          { "id": "yd", "name": "YD", "fromYear": 2013, "toYear": 2018 },
+          { "id": "bd", "name": "BD", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "kia-picanto", "name": "Picanto", "generations": [
+          { "id": "ta", "name": "TA", "fromYear": 2011, "toYear": 2017 },
+          { "id": "ja", "name": "JA", "fromYear": 2017, "toYear": null }
+        ] },
+        { "id": "kia-rio", "name": "Rio", "generations": [
+          { "id": "ub", "name": "UB", "fromYear": 2011, "toYear": 2017 },
+          { "id": "yb", "name": "YB", "fromYear": 2017, "toYear": null }
+        ] },
+        { "id": "kia-seltos", "name": "Seltos", "generations": [
+          { "id": "sp2", "name": "SP2", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "kia-sorento", "name": "Sorento", "generations": [
+          { "id": "um", "name": "UM", "fromYear": 2014, "toYear": 2020 },
+          { "id": "mq4", "name": "MQ4", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "kia-sportage", "name": "Sportage", "generations": [
+          { "id": "sl", "name": "SL", "fromYear": 2010, "toYear": 2015 },
+          { "id": "ql", "name": "QL", "fromYear": 2015, "toYear": 2021 },
+          { "id": "nq5", "name": "NQ5", "fromYear": 2021, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "mercedes-benz",
+      "name": "Mercedes-Benz",
+      "models": [
+        { "id": "mercedes-benz-classe-a", "name": "Classe A", "generations": [
+          { "id": "w169", "name": "W169", "fromYear": 2004, "toYear": 2012 },
+          { "id": "w176", "name": "W176", "fromYear": 2012, "toYear": 2018 },
+          { "id": "w177", "name": "W177", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "mercedes-benz-classe-c", "name": "Classe C", "generations": [
+          { "id": "w204", "name": "W204", "fromYear": 2007, "toYear": 2014 },
+          { "id": "w205", "name": "W205", "fromYear": 2014, "toYear": 2021 },
+          { "id": "w206", "name": "W206", "fromYear": 2021, "toYear": null }
+        ] },
+        { "id": "mercedes-benz-classe-e", "name": "Classe E", "generations": [
+          { "id": "w212", "name": "W212", "fromYear": 2009, "toYear": 2016 },
+          { "id": "w213", "name": "W213", "fromYear": 2016, "toYear": 2023 },
+          { "id": "w214", "name": "W214", "fromYear": 2023, "toYear": null }
+        ] },
+        { "id": "mercedes-benz-cla", "name": "CLA", "generations": [
+          { "id": "c117", "name": "C117", "fromYear": 2013, "toYear": 2019 },
+          { "id": "c118", "name": "C118, X118", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "mercedes-benz-gla", "name": "GLA", "generations": [
+          { "id": "x156", "name": "X156", "fromYear": 2013, "toYear": 2020 },
+          { "id": "h247", "name": "H247", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "mercedes-benz-glc", "name": "GLC", "generations": [
+          { "id": "x253", "name": "X253", "fromYear": 2015, "toYear": 2022 },
+          { "id": "x254", "name": "X254", "fromYear": 2022, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "mg",
+      "name": "MG",
+      "models": [
+        { "id": "mg-hs", "name": "HS", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2018, "toYear": 2024 },
+          { "id": "gen-2", "name": "2nd generation", "fromYear": 2024, "toYear": null }
+        ] },
+        { "id": "mg-mg4", "name": "MG4", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2022, "toYear": null }
+        ] },
+        { "id": "mg-mg5", "name": "MG5", "generations": [
+          { "id": "gen-2", "name": "2nd generation", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "mg-zs", "name": "ZS", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2017, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "nissan",
+      "name": "Nissan",
+      "models": [
+        { "id": "nissan-juke", "name": "Juke", "generations": [
+          { "id": "f15", "name": "F15", "fromYear": 2010, "toYear": 2019 },
+          { "id": "f16", "name": "F16", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "nissan-micra", "name": "Micra", "generations": [
+          { "id": "k13", "name": "K13", "fromYear": 2010, "toYear": 2017 },
+          { "id": "k14", "name": "K14", "fromYear": 2017, "toYear": 2023 }
+        ] },
+        { "id": "nissan-navara", "name": "Navara", "generations": [
+          { "id": "d40", "name": "D40", "fromYear": 2004, "toYear": 2015 },
+          { "id": "d23", "name": "D23", "fromYear": 2014, "toYear": null }
+        ] },
+        { "id": "nissan-qashqai", "name": "Qashqai", "generations": [
+          { "id": "j10", "name": "J10", "fromYear": 2006, "toYear": 2013 },
+          { "id": "j11", "name": "J11", "fromYear": 2013, "toYear": 2021 },
+          { "id": "j12", "name": "J12", "fromYear": 2021, "toYear": null }
+        ] },
+        { "id": "nissan-x-trail", "name": "X-Trail", "generations": [
+          { "id": "t31", "name": "T31", "fromYear": 2007, "toYear": 2013 },
+          { "id": "t32", "name": "T32", "fromYear": 2013, "toYear": 2021 },
+          { "id": "t33", "name": "T33", "fromYear": 2021, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "opel",
+      "name": "Opel",
+      "models": [
+        { "id": "opel-astra", "name": "Astra", "generations": [
+          { "id": "j", "name": "Astra J", "fromYear": 2009, "toYear": 2015 },
+          { "id": "k", "name": "Astra K", "fromYear": 2015, "toYear": 2021 },
+          { "id": "l", "name": "Astra L", "fromYear": 2021, "toYear": null }
+        ] },
+        { "id": "opel-corsa", "name": "Corsa", "generations": [
+          { "id": "d", "name": "Corsa D", "fromYear": 2006, "toYear": 2014 },
+          { "id": "e", "name": "Corsa E", "fromYear": 2014, "toYear": 2019 },
+          { "id": "f", "name": "Corsa F", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "opel-crossland", "name": "Crossland", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2017, "toYear": 2024 }
+        ] },
+        { "id": "opel-grandland", "name": "Grandland", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2017, "toYear": 2024 },
+          { "id": "gen-2", "name": "2nd generation", "fromYear": 2024, "toYear": null }
+        ] },
+        { "id": "opel-insignia", "name": "Insignia", "generations": [
+          { "id": "a", "name": "Insignia A", "fromYear": 2008, "toYear": 2017 },
+          { "id": "b", "name": "Insignia B", "fromYear": 2017, "toYear": 2022 }
+        ] }
+      ]
+    },
+    {
+      "id": "peugeot",
+      "name": "Peugeot",
+      "models": [
+        { "id": "peugeot-206", "name": "206", "generations": [
+          { "id": "gen-1", "name": "206", "fromYear": 1998, "toYear": 2012 }
+        ] },
+        { "id": "peugeot-208", "name": "208", "generations": [
+          { "id": "a9", "name": "208 I (A9)", "fromYear": 2012, "toYear": 2019 },
+          { "id": "p21", "name": "208 II (P21)", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "peugeot-2008", "name": "2008", "generations": [
+          { "id": "a94", "name": "2008 I (A94)", "fromYear": 2013, "toYear": 2019 },
+          { "id": "p24", "name": "2008 II (P24)", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "peugeot-301", "name": "301", "generations": [
+          { "id": "gen-1", "name": "301", "fromYear": 2012, "toYear": 2023 }
+        ] },
+        { "id": "peugeot-308", "name": "308", "generations": [
+          { "id": "t7", "name": "308 I (T7)", "fromYear": 2007, "toYear": 2013 },
+          { "id": "t9", "name": "308 II (T9)", "fromYear": 2013, "toYear": 2021 },
+          { "id": "p5", "name": "308 III (P5)", "fromYear": 2021, "toYear": null }
+        ] },
+        { "id": "peugeot-3008", "name": "3008", "generations": [
+          { "id": "t84", "name": "3008 I (T84)", "fromYear": 2009, "toYear": 2016 },
+          { "id": "p84", "name": "3008 II (P84)", "fromYear": 2016, "toYear": 2023 },
+          { "id": "p64", "name": "3008 III (P64)", "fromYear": 2023, "toYear": null }
+        ] },
+        { "id": "peugeot-508", "name": "508", "generations": [
+          { "id": "w2", "name": "508 I (W2)", "fromYear": 2010, "toYear": 2018 },
+          { "id": "r8", "name": "508 II (R8)", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "peugeot-partner", "name": "Partner", "generations": [
+          { "id": "b9", "name": "Partner II (B9)", "fromYear": 2008, "toYear": 2018 },
+          { "id": "k9", "name": "Partner III (K9)", "fromYear": 2018, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "renault",
+      "name": "Renault",
+      "models": [
+        { "id": "renault-austral", "name": "Austral", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2022, "toYear": null }
+        ] },
+        { "id": "renault-captur", "name": "Captur", "generations": [
+          { "id": "gen-1", "name": "Captur I", "fromYear": 2013, "toYear": 2019 },
+          { "id": "gen-2", "name": "Captur II", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "renault-clio", "name": "Clio", "generations": [
+          { "id": "gen-3", "name": "Clio III", "fromYear": 2005, "toYear": 2012 },
+          { "id": "gen-4", "name": "Clio IV", "fromYear": 2012, "toYear": 2019 },
+          { "id": "gen-5", "name": "Clio V", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "renault-kadjar", "name": "Kadjar", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2015, "toYear": 2022 }
+        ] },
+        { "id": "renault-kangoo", "name": "Kangoo", "generations": [
+          { "id": "gen-2", "name": "Kangoo II", "fromYear": 2007, "toYear": 2021 },
+          { "id": "gen-3", "name": "Kangoo III", "fromYear": 2021, "toYear": null }
+        ] },
+        { "id": "renault-megane", "name": "Mégane", "generations": [
+          { "id": "gen-2", "name": "Mégane II", "fromYear": 2002, "toYear": 2008 },
+          { "id": "gen-3", "name": "Mégane III", "fromYear": 2008, "toYear": 2016 },
+          { "id": "gen-4", "name": "Mégane IV", "fromYear": 2016, "toYear": 2023 }
+        ] },
+        { "id": "renault-symbol", "name": "Symbol", "generations": [
+          { "id": "gen-2", "name": "Symbol II", "fromYear": 2008, "toYear": 2013 },
+          { "id": "gen-3", "name": "Symbol III", "fromYear": 2013, "toYear": 2021 }
+        ] }
+      ]
+    },
+    {
+      "id": "seat",
+      "name": "Seat",
+      "models": [
+        { "id": "seat-arona", "name": "Arona", "generations": [
+          { "id": "kj7", "name": "KJ7", "fromYear": 2017, "toYear": null }
+        ] },
+        { "id": "seat-ateca", "name": "Ateca", "generations": [
+          { "id": "kh7", "name": "KH7", "fromYear": 2016, "toYear": null }
+        ] },
+        { "id": "seat-ibiza", "name": "Ibiza", "generations": [
+          { "id": "6j", "name": "6J", "fromYear": 2008, "toYear": 2017 },
+          { "id": "6f", "name": "6F", "fromYear": 2017, "toYear": null }
+        ] },
+        { "id": "seat-leon", "name": "Leon", "generations": [
+          { "id": "1p", "name": "1P", "fromYear": 2005, "toYear": 2012 },
+          { "id": "5f", "name": "5F", "fromYear": 2012, "toYear": 2020 },
+          { "id": "kl", "name": "KL", "fromYear": 2020, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "skoda",
+      "name": "Skoda",
+      "models": [
+        { "id": "skoda-fabia", "name": "Fabia", "generations": [
+          { "id": "gen-2", "name": "Fabia II", "fromYear": 2007, "toYear": 2014 },
+          { "id": "gen-3", "name": "Fabia III", "fromYear": 2014, "toYear": 2021 },
+          { "id": "gen-4", "name": "Fabia IV", "fromYear": 2021, "toYear": null }
+        ] },
+        { "id": "skoda-karoq", "name": "Karoq", "generations": [
+          { "id": "gen-1", "name": "1st generation", "fromYear": 2017, "toYear": null }
+        ] },
+        { "id": "skoda-kodiaq", "name": "Kodiaq", "generations": [
+          { "id": "gen-1", "name": "Kodiaq I", "fromYear": 2016, "toYear": 2024 },
+          { "id": "gen-2", "name": "Kodiaq II", "fromYear": 2024, "toYear": null }
+        ] },
+        { "id": "skoda-octavia", "name": "Octavia", "generations": [
+          { "id": "1z", "name": "Octavia II (1Z)", "fromYear": 2004, "toYear": 2013 },
+          { "id": "5e", "name": "Octavia III (5E)", "fromYear": 2013, "toYear": 2020 },
+          { "id": "nx", "name": "Octavia IV (NX)", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "skoda-superb", "name": "Superb", "generations": [
+          { "id": "3t", "name": "Superb II (3T)", "fromYear": 2008, "toYear": 2015 },
+          { "id": "3v", "name": "Superb III (3V)", "fromYear": 2015, "toYear": 2023 },
+          { "id": "gen-4", "name": "Superb IV", "fromYear": 2023, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "suzuki",
+      "name": "Suzuki",
+      "models": [
+        { "id": "suzuki-celerio", "name": "Celerio", "generations": [
+          { "id": "gen-1", "name": "Celerio I", "fromYear": 2014, "toYear": 2021 },
+          { "id": "gen-2", "name": "Celerio II", "fromYear": 2021, "toYear": null }
+        ] },
+        { "id": "suzuki-jimny", "name": "Jimny", "generations": [
+          { "id": "jb64", "name": "JB64", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "suzuki-swift", "name": "Swift", "generations": [
+          { "id": "fz", "name": "FZ", "fromYear": 2010, "toYear": 2017 },
+          { "id": "az", "name": "AZ", "fromYear": 2017, "toYear": 2024 },
+          { "id": "azh", "name": "AZH", "fromYear": 2024, "toYear": null }
+        ] },
+        { "id": "suzuki-vitara", "name": "Vitara", "generations": [
+          { "id": "ly", "name": "LY", "fromYear": 2015, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "toyota",
+      "name": "Toyota",
+      "models": [
+        { "id": "toyota-c-hr", "name": "C-HR", "generations": [
+          { "id": "ax10", "name": "AX10", "fromYear": 2016, "toYear": 2023 },
+          { "id": "ax20", "name": "AX20", "fromYear": 2023, "toYear": null }
+        ] },
+        { "id": "toyota-corolla", "name": "Corolla", "generations": [
+          { "id": "e150", "name": "E150", "fromYear": 2006, "toYear": 2013 },
+          { "id": "e170", "name": "E170", "fromYear": 2013, "toYear": 2019 },
+          { "id": "e210", "name": "E210", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "toyota-hilux", "name": "Hilux", "generations": [
+          { "id": "an10", "name": "AN10", "fromYear": 2004, "toYear": 2015 },
+          { "id": "an120", "name": "AN120", "fromYear": 2015, "toYear": null }
+        ] },
+        { "id": "toyota-land-cruiser-prado", "name": "Land Cruiser Prado", "generations": [
+          { "id": "j150", "name": "J150", "fromYear": 2009, "toYear": 2023 },
+          { "id": "j250", "name": "J250", "fromYear": 2023, "toYear": null }
+        ] },
+        { "id": "toyota-rav4", "name": "RAV4", "generations": [
+          { "id": "xa30", "name": "XA30", "fromYear": 2005, "toYear": 2012 },
+          { "id": "xa40", "name": "XA40", "fromYear": 2012, "toYear": 2018 },
+          { "id": "xa50", "name": "XA50", "fromYear": 2018, "toYear": null }
+        ] },
+        { "id": "toyota-yaris", "name": "Yaris", "generations": [
+          { "id": "xp130", "name": "XP130", "fromYear": 2011, "toYear": 2020 },
+          { "id": "xp210", "name": "XP210", "fromYear": 2020, "toYear": null }
+        ] }
+      ]
+    },
+    {
+      "id": "volkswagen",
+      "name": "Volkswagen",
+      "models": [
+        { "id": "volkswagen-caddy", "name": "Caddy", "generations": [
+          { "id": "2k", "name": "2K", "fromYear": 2003, "toYear": 2020 },
+          { "id": "sb", "name": "SB", "fromYear": 2020, "toYear": null }
+        ] },
+        { "id": "volkswagen-golf", "name": "Golf", "generations": [
+          { "id": "mk5", "name": "Golf 5", "fromYear": 2003, "toYear": 2008 },
+          { "id": "mk6", "name": "Golf 6", "fromYear": 2008, "toYear": 2012 },
+          { "id": "mk7", "name": "Golf 7", "fromYear": 2012, "toYear": 2019 },
+          { "id": "mk8", "name": "Golf 8", "fromYear": 2019, "toYear": null }
+        ] },
+        { "id": "volkswagen-passat", "name": "Passat", "generations": [
+          { "id": "b6", "name": "B6", "fromYear": 2005, "toYear": 2010 },
+          { "id": "b7", "name": "B7", "fromYear": 2010, "toYear": 2014 },
+          { "id": "b8", "name": "B8", "fromYear": 2014, "toYear": 2023 },
+          { "id": "b9", "name": "B9", "fromYear": 2023, "toYear": null }
+        ] },
+        { "id": "volkswagen-polo", "name": "Polo", "generations": [
+          { "id": "9n", "name": "Polo 4 (9N)", "fromYear": 2001, "toYear": 2009 },
+          { "id": "6r", "name": "Polo 5 (6R)", "fromYear": 2009, "toYear": 2017 },
+          { "id": "aw", "name": "Polo 6 (AW)", "fromYear": 2017, "toYear": null }
+        ] },
+        { "id": "volkswagen-t-roc", "name": "T-Roc", "generations": [
+          { "id": "a1", "name": "A1", "fromYear": 2017, "toYear": null }
+        ] },
+        { "id": "volkswagen-tiguan", "name": "Tiguan", "generations": [
+          { "id": "5n", "name": "Tiguan I (5N)", "fromYear": 2007, "toYear": 2016 },
+          { "id": "ad1", "name": "Tiguan II (AD1)", "fromYear": 2016, "toYear": 2024 },
+          { "id": "gen-3", "name": "Tiguan III", "fromYear": 2024, "toYear": null }
+        ] }
+      ]
+    }
+  ]
+}
