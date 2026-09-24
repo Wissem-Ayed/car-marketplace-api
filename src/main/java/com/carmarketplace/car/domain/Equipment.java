@@ -1,0 +1,81 @@
+package com.carmarketplace.car.domain;
+
+import static com.carmarketplace.car.domain.EquipmentCategory.ACCESS;
+import static com.carmarketplace.car.domain.EquipmentCategory.ACTIVE_SAFETY;
+import static com.carmarketplace.car.domain.EquipmentCategory.COMFORT;
+import static com.carmarketplace.car.domain.EquipmentCategory.DRIVING_ASSISTANCE;
+import static com.carmarketplace.car.domain.EquipmentCategory.EXTERIOR;
+import static com.carmarketplace.car.domain.EquipmentCategory.LIGHTING;
+import static com.carmarketplace.car.domain.EquipmentCategory.MULTIMEDIA;
+import static com.carmarketplace.car.domain.EquipmentCategory.PASSIVE_SAFETY;
+
+public enum Equipment {
+    FRONT_AIRBAGS(PASSIVE_SAFETY),
+    SIDE_AIRBAGS(PASSIVE_SAFETY),
+    CURTAIN_AIRBAGS(PASSIVE_SAFETY),
+    ISOFIX(PASSIVE_SAFETY),
+
+    ABS(ACTIVE_SAFETY),
+    ESP(ACTIVE_SAFETY),
+    EMERGENCY_BRAKE_ASSIST(ACTIVE_SAFETY),
+    TRACTION_CONTROL(ACTIVE_SAFETY),
+    HILL_START_ASSIST(ACTIVE_SAFETY),
+    COLLISION_WARNING(ACTIVE_SAFETY),
+
+    POWER_WINDOWS(COMFORT),
+    AUTOMATIC_CLIMATE_CONTROL(COMFORT),
+    DUAL_ZONE_CLIMATE_CONTROL(COMFORT),
+    AMBIENT_LIGHTING(COMFORT),
+    LEATHER_SEATS(COMFORT),
+    ELECTRIC_SEATS(COMFORT),
+    HEATED_SEATS(COMFORT),
+    MEMORY_SEATS(COMFORT),
+    RAIN_SENSOR(COMFORT),
+
+    POWER_STEERING(DRIVING_ASSISTANCE),
+    CRUISE_CONTROL(DRIVING_ASSISTANCE),
+    ADAPTIVE_CRUISE_CONTROL(DRIVING_ASSISTANCE),
+    REAR_PARKING_SENSORS(DRIVING_ASSISTANCE),
+    REAR_CAMERA(DRIVING_ASSISTANCE),
+    CAMERA_360(DRIVING_ASSISTANCE),
+    PARK_ASSIST(DRIVING_ASSISTANCE),
+    BLIND_SPOT_DETECTION(DRIVING_ASSISTANCE),
+    LANE_KEEP_ASSIST(DRIVING_ASSISTANCE),
+    TRAFFIC_SIGN_RECOGNITION(DRIVING_ASSISTANCE),
+
+    LED_DAYTIME_LIGHTS(LIGHTING),
+    FULL_LED_HEADLIGHTS(LIGHTING),
+    LED_TAIL_LIGHTS(LIGHTING),
+    ADAPTIVE_HEADLIGHTS(LIGHTING),
+    AUTOMATIC_HEADLIGHTS(LIGHTING),
+
+    TOUCHSCREEN(MULTIMEDIA),
+    BLUETOOTH(MULTIMEDIA),
+    APPLE_CARPLAY_ANDROID_AUTO(MULTIMEDIA),
+    NAVIGATION(MULTIMEDIA),
+    VOICE_CONTROL(MULTIMEDIA),
+    DIGITAL_COCKPIT(MULTIMEDIA),
+    PREMIUM_AUDIO(MULTIMEDIA),
+    WIRELESS_CHARGING(MULTIMEDIA),
+
+    REMOTE_CENTRAL_LOCKING(ACCESS),
+    KEYLESS_ENTRY(ACCESS),
+    KEYLESS_START(ACCESS),
+
+    TINTED_WINDOWS(EXTERIOR),
+    POWER_FOLDING_MIRRORS(EXTERIOR),
+    SUNROOF(EXTERIOR),
+    PANORAMIC_ROOF(EXTERIOR),
+    ALLOY_WHEELS(EXTERIOR),
+    TOW_BAR(EXTERIOR);
+
+    private final EquipmentCategory category;
+
+    Equipment(EquipmentCategory category) {
+        this.category = category;
+    }
+
+    public EquipmentCategory category() {
+        return category;
+    }
+}

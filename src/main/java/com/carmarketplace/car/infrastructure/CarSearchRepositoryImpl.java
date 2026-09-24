@@ -1,9 +1,8 @@
 package com.carmarketplace.car.infrastructure;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Pattern;
-
+import com.carmarketplace.car.domain.Car;
+import com.carmarketplace.car.domain.CarSearchCriteria;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -11,10 +10,8 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.support.PageableExecutionUtils;
 
-import com.carmarketplace.car.domain.Car;
-import com.carmarketplace.car.domain.CarSearchCriteria;
-
-import lombok.RequiredArgsConstructor;
+import java.util.ArrayList;
+import java.util.List;
 
 @RequiredArgsConstructor
 class CarSearchRepositoryImpl implements CarSearchRepository {
@@ -31,30 +28,41 @@ class CarSearchRepositoryImpl implements CarSearchRepository {
     private static Criteria toCriteria(CarSearchCriteria criteria) {
         List<Criteria> filters = new ArrayList<>();
 
-        if (criteria.brand() != null && !criteria.brand().isBlank()) {
-            filters.add(Criteria.where("brand").regex("^" + Pattern.quote(criteria.brand().strip()) + "$", "i"));
-        }
-        if (criteria.minPrice() != null || criteria.maxPrice() != null) {
-            Criteria price = Criteria.where("price");
-            if (criteria.minPrice() != null) {
-                price.gte(criteria.minPrice());
-            }
-            if (criteria.maxPrice() != null) {
-                price.lte(criteria.maxPrice());
-            }
-            filters.add(price);
-        }
-        if (criteria.minYear() != null || criteria.maxYear() != null) {
-            Criteria year = Criteria.where("year");
-            if (criteria.minYear() != null) {
-                year.gte(criteria.minYear());
-            }
-            if (criteria.maxYear() != null) {
-                year.lte(criteria.maxYear());
-            }
-            filters.add(year);
+        addEquals(filters, "vehicle.brand.id", criteria.brandId());
+        addEquals(filters, "vehicle.model.id", criteria.modelId());
+        addEquals(filters, "vehicle.generation.id", criteria.generationId());
+        addEquals(filters, "vehicle.bodyType", criteria.bodyType());
+        addEquals(filters, "engine.fuelType", criteria.fuelType());
+        addEquals(filters, "engine.transmission", criteria.transmission());
+        addEquals(filters, "history.condition", criteria.condition());
+        addEquals(filters, "status", criteria.status());
+        addRange(filters, "price.amount", criteria.minPrice(), criteria.maxPrice());
+        addRange(filters, "vehicle.year", criteria.minYear(), criteria.maxYear());
+        addRange(filters, "history.mileageKm", null, criteria.maxMileageKm());
+        if (criteria.equipment() != null && !criteria.equipment().isEmpty()) {
+            filters.add(Criteria.where("equipment").all(criteria.equipment()));
         }
 
         return filters.isEmpty() ? new Criteria() : new Criteria().andOperator(filters);
+    }
+
+    private static void addEquals(List<Criteria> filters, String field, Object value) {
+        if (value != null) {
+            filters.add(Criteria.where(field).is(value));
+        }
+    }
+
+    private static void addRange(List<Criteria> filters, String field, Object min, Object max) {
+        if (min == null && max == null) {
+            return;
+        }
+        Criteria range = Criteria.where(field);
+        if (min != null) {
+            range.gte(min);
+        }
+        if (max != null) {
+            range.lte(max);
+        }
+        filters.add(range);
     }
 }

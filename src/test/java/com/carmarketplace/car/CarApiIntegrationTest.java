@@ -1,0 +1,125 @@
+package com.carmarketplace.car;
+
+import com.carmarketplace.TestcontainersConfiguration;
+import com.carmarketplace.car.api.CarJson;
+import org.bson.Document;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Import(TestcontainersConfiguration.class)
+class CarApiIntegrationTest {
+
+    @Autowired
+    private MockMvcTester mvc;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    @BeforeEach
+    void setUp() {
+        mongoTemplate.getCollection("cars").deleteMany(new Document());
+    }
+
+    @Test
+    void createsACarWithCatalogNamesStatusVersionAndTimestamps() {
+        assertThat(create(CarJson.VALID))
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson()
+                .satisfies(json -> {
+                    assertThat(json).extractingPath("$.vehicle.brand.name").isEqualTo("Mercedes-Benz");
+                    assertThat(json).extractingPath("$.vehicle.model.name").isEqualTo("CLA");
+                    assertThat(json).extractingPath("$.vehicle.generation.name").isEqualTo("C118, X118");
+                    assertThat(json).extractingPath("$.price.currency").isEqualTo("TND");
+                    assertThat(json).extractingPath("$.equipment")
+                            .asArray().containsExactly("ABS", "ESP", "APPLE_CARPLAY_ANDROID_AUTO", "PANORAMIC_ROOF");
+                    assertThat(json).extractingPath("$.status").isEqualTo("AVAILABLE");
+                    assertThat(json).extractingPath("$.version").isEqualTo(0);
+                    assertThat(json).extractingPath("$.createdAt").isNotNull();
+                });
+    }
+
+    @Test
+    void infersTheGenerationFromTheYear() {
+        assertThat(create(CarJson.car("peugeot", "peugeot-208", null, 2016)))
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson().extractingPath("$.vehicle.generation.id").isEqualTo("a9");
+    }
+
+    @Test
+    void rejectsAModelThatDoesNotBelongToTheBrand() {
+        assertThat(create(CarJson.car("peugeot", "renault-clio", null, 2020)))
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .bodyJson().extractingPath("$.detail").isEqualTo("Model 'renault-clio' does not exist for brand Peugeot");
+    }
+
+    @Test
+    void rejectsAYearOutsideTheGeneration() {
+        assertThat(create(CarJson.car("mercedes-benz", "mercedes-benz-cla", "c118", 2015)))
+                .hasStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+                .bodyJson().extractingPath("$.detail")
+                .isEqualTo("Mercedes-Benz CLA C118, X118 was produced in 2019–present, not in 2015");
+    }
+
+    @Test
+    void followsTheListingLifecycle() {
+        String id = idOf(create(CarJson.VALID));
+
+        assertThat(changeStatus(id, "RESERVED")).hasStatusOk();
+        assertThat(changeStatus(id, "SOLD")).hasStatusOk().bodyJson().extractingPath("$.version").isEqualTo(2);
+        assertThat(changeStatus(id, "AVAILABLE")).hasStatus(HttpStatus.CONFLICT);
+        assertThat(mvc.put().uri("/api/v1/cars/" + id).contentType(MediaType.APPLICATION_JSON).content(CarJson.VALID))
+                .hasStatus(HttpStatus.CONFLICT)
+                .bodyJson().extractingPath("$.detail").isEqualTo("Car " + id + " is sold and can no longer be edited");
+    }
+
+    @Test
+    void searchesByCatalogIdsAndEquipment() {
+        create(CarJson.VALID);
+        create(CarJson.car("peugeot", "peugeot-208", "p21", 2021));
+
+        assertThat(mvc.get().uri("/api/v1/cars?brandId=mercedes-benz&equipment=ABS,PANORAMIC_ROOF"))
+                .hasStatusOk()
+                .bodyJson()
+                .satisfies(json -> {
+                    assertThat(json).extractingPath("$.page.totalElements").isEqualTo(1);
+                    assertThat(json).extractingPath("$.content[0].vehicle.model.name").isEqualTo("CLA");
+                });
+    }
+
+    @Test
+    void listsEquipmentGroupedByCategory() {
+        assertThat(mvc.get().uri("/api/v1/equipment"))
+                .hasStatusOk()
+                .bodyJson().extractingPath("$.PASSIVE_SAFETY")
+                .asArray().contains("FRONT_AIRBAGS", "ISOFIX");
+    }
+
+    private MvcTestResult create(String json) {
+        return mvc.post().uri("/api/v1/cars").contentType(MediaType.APPLICATION_JSON).content(json).exchange();
+    }
+
+    private MvcTestResult changeStatus(String id, String status) {
+        return mvc.patch().uri("/api/v1/cars/" + id + "/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\": \"%s\"}".formatted(status))
+                .exchange();
+    }
+
+    private static String idOf(MvcTestResult result) {
+        String location = result.getResponse().getHeader("Location");
+        return location.substring(location.lastIndexOf('/') + 1);
+    }
+}
