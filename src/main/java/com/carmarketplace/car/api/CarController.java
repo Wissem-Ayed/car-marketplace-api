@@ -41,6 +41,7 @@ public class CarController {
     private static final String CAR_ID_EXAMPLE = "6ab5500b9fce1c0a50b91e83";
 
     private final CarService carService;
+    private final CarResponseMapper mapper;
 
     @PostMapping
     @Operation(
@@ -54,21 +55,21 @@ public class CarController {
     @ApiResponse(responseCode = "400", description = "Malformed JSON or invalid fields, listed in `errors`")
     @ApiResponse(responseCode = "422",
             description = "Business rule violated: unknown catalog ids, year outside the generation, inconsistent engine…")
-    public ResponseEntity<Car> createCar(@Valid @RequestBody CarRequest request) {
+    public ResponseEntity<CarResponse> createCar(@Valid @RequestBody CarRequest request) {
         Car created = carService.createCar(request.toDraft());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(created.id())
                 .toUri();
-        return ResponseEntity.created(location).body(created);
+        return ResponseEntity.created(location).body(mapper.toResponse(created));
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a car listing")
     @ApiResponse(responseCode = "200", description = "The listing")
     @ApiResponse(responseCode = "404", description = "No listing with this id")
-    public Car getCar(@Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String id) {
-        return carService.getCar(id);
+    public CarResponse getCar(@Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String id) {
+        return mapper.toResponse(carService.getCar(id));
     }
 
     @GetMapping
@@ -80,10 +81,10 @@ public class CarController {
                     `history.mileageKm`.""")
     @ApiResponse(responseCode = "200", description = "One page of listings")
     @ApiResponse(responseCode = "400", description = "Invalid filter value, e.g. an unknown enum code")
-    public PagedModel<Car> getCars(
+    public PagedModel<CarResponse> getCars(
             @ParameterObject CarSearchParams params,
             @ParameterObject @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
-        return new PagedModel<>(carService.getCars(params.toCriteria(), pageable));
+        return new PagedModel<>(carService.getCars(params.toCriteria(), pageable).map(mapper::toResponse));
     }
 
     @PutMapping("/{id}")
@@ -96,10 +97,10 @@ public class CarController {
     @ApiResponse(responseCode = "409",
             description = "The listing is sold, or it was modified by another request in the meantime")
     @ApiResponse(responseCode = "422", description = "Business rule violated")
-    public Car updateCar(
+    public CarResponse updateCar(
             @Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String id,
             @Valid @RequestBody CarRequest request) {
-        return carService.updateCar(id, request.toDraft());
+        return mapper.toResponse(carService.updateCar(id, request.toDraft()));
     }
 
     @PatchMapping("/{id}/status")
@@ -110,10 +111,10 @@ public class CarController {
     @ApiResponse(responseCode = "400", description = "Missing or unknown status")
     @ApiResponse(responseCode = "404", description = "No listing with this id")
     @ApiResponse(responseCode = "409", description = "The move is not allowed from the current status")
-    public Car changeStatus(
+    public CarResponse changeStatus(
             @Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String id,
             @Valid @RequestBody StatusRequest request) {
-        return carService.changeStatus(id, request.status());
+        return mapper.toResponse(carService.changeStatus(id, request.status()));
     }
 
     @DeleteMapping("/{id}")

@@ -10,5 +10,21 @@ services:
     volumes:
       - 'mongo-data:/data/db'
 
+  seaweedfs:
+    image: 'chrislusf/seaweedfs:4.47'
+    command: 'server -dir=/data -s3 -s3.config=/etc/seaweedfs/s3.json'
+    ports:
+      - '8333:8333'
+      - '8888:8888'
+    volumes:
+      - 'seaweed-data:/data'
+      - './docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro'
+    healthcheck:
+      test: ['CMD-SHELL', "wget -q -S -O /dev/null http://127.0.0.1:8333/ 2>&1 | grep -q 'HTTP/1.1'"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
 volumes:
   mongo-data:
+  seaweed-data:

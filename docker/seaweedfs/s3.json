@@ -1,0 +1,18 @@
+{
+  "identities": [
+    {
+      "name": "anonymous",
+      "actions": ["Read"]
+    },
+    {
+      "name": "car-marketplace-api",
+      "credentials": [
+        {
+          "accessKey": "car-marketplace",
+          "secretKey": "car-marketplace-secret"
+        }
+      ],
+      "actions": ["Admin", "Read", "List", "Tagging", "Write"]
+    }
+  ]
+}

@@ -19,6 +19,7 @@ public class CarService {
 
     private final CarRepository carRepository;
     private final CatalogService catalogService;
+    private final PhotoService photoService;
 
     public Car createCar(CarDraft draft) {
         Car car = Car.create(toVehicle(draft.vehicle()), draft.engine(), draft.history(), draft.price(),
@@ -47,7 +48,9 @@ public class CarService {
     }
 
     public void deleteCar(String id) {
-        carRepository.delete(getCar(id));
+        Car car = getCar(id);
+        carRepository.delete(car);
+        photoService.deleteAllPhotos(car);
     }
 
     private Vehicle toVehicle(CarDraft.VehicleSpec spec) {

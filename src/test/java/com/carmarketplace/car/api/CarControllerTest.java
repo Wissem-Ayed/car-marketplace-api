@@ -2,6 +2,7 @@ package com.carmarketplace.car.api;
 
 import com.carmarketplace.car.application.CarNotFoundException;
 import com.carmarketplace.car.application.CarService;
+import com.carmarketplace.car.application.PhotoStorage;
 import com.carmarketplace.car.domain.Car;
 import com.carmarketplace.car.domain.CarSearchCriteria;
 import com.carmarketplace.car.domain.CarStatus;
@@ -12,6 +13,7 @@ import com.carmarketplace.common.domain.BusinessRuleViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -33,6 +35,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
 
 @WebMvcTest(CarController.class)
+@Import(CarResponseMapper.class)
 class CarControllerTest {
 
     private final Car car = aCar().id("abc123").build();
@@ -42,6 +45,9 @@ class CarControllerTest {
 
     @MockitoBean
     private CarService carService;
+
+    @MockitoBean
+    private PhotoStorage photoStorage;
 
     @Test
     void createReturns201WithLocationHeader() {

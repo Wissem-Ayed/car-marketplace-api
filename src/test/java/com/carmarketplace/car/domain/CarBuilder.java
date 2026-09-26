@@ -1,6 +1,9 @@
 package com.carmarketplace.car.domain;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 public final class CarBuilder {
@@ -16,6 +19,7 @@ public final class CarBuilder {
     private BigDecimal price = new BigDecimal("185000");
     private Set<Equipment> equipment = Set.of(Equipment.ABS, Equipment.ESP);
     private CarStatus status = CarStatus.AVAILABLE;
+    private List<Photo> photos = List.of();
 
     private CarBuilder() {
     }
@@ -69,6 +73,13 @@ public final class CarBuilder {
         return this;
     }
 
+    public CarBuilder photos(String... photoIds) {
+        this.photos = Arrays.stream(photoIds)
+                .map(photoId -> new Photo(photoId, 1920, 1080, Instant.parse("2026-01-01T10:00:00Z")))
+                .toList();
+        return this;
+    }
+
     public CarBuilder status(CarStatus status) {
         this.status = status;
         return this;
@@ -84,6 +95,7 @@ public final class CarBuilder {
                 Price.tnd(price, true),
                 equipment,
                 "Test description",
+                photos,
                 status,
                 null,
                 null,

@@ -15,14 +15,16 @@ publish a car that doesn't exist.
   generation are checked, and the generation is inferred from the year when it's unambiguous.
 - **Rich domain model** – immutable records, value objects (`Vehicle`, `Engine`, `History`, `Price`) and business
   rules enforced in the domain, not scattered across controllers.
+- **Secure photo pipeline** – up to 10 photos per listing, checked by their real content, stripped of metadata
+  (including the GPS location phones embed), resized to three sizes and served straight from S3-compatible storage.
 - **Listing lifecycle** – `AVAILABLE ⇄ RESERVED → SOLD`, with sold listings locked against edits.
 - **Optimistic locking** – concurrent edits are detected with `@Version` instead of silently overwriting each other.
 - **Indexed search** – filters on catalog ids, price, year, mileage, fuel, transmission, equipment…, paginated and
   sortable, backed by MongoDB indexes.
 - **Consistent errors** – every error follows [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) Problem Details,
   including the list of invalid fields on validation errors.
-- **Tested at every level** – 69 tests: domain unit tests, controller slice tests, repository tests and end-to-end
-  tests against a real MongoDB started by Testcontainers.
+- **Tested at every level** – 96 tests: domain unit tests, controller slice tests, repository tests and end-to-end
+  tests against real MongoDB and SeaweedFS containers started by Testcontainers.
 
 ## Tech stack
 
@@ -31,6 +33,8 @@ publish a car that doesn't exist.
 | Language      | Java 21 (records, switch expressions, text blocks)             |
 | Framework     | Spring Boot 4.1 (Spring MVC, Bean Validation, Actuator)        |
 | Database      | MongoDB 8.0 with Spring Data MongoDB                           |
+| File storage  | S3 API (AWS SDK v2), SeaweedFS locally                         |
+| Images        | Thumbnailator, TwelveMonkeys ImageIO (WebP)                    |
 | API docs      | OpenAPI 3 / Swagger UI (springdoc)                             |
 | Tests         | JUnit 5, AssertJ, Mockito, MockMvcTester, Testcontainers       |
 | Local runtime | Docker Compose, started automatically by Spring Boot           |
@@ -61,6 +65,8 @@ flowchart LR
     APP --> INFRA[infrastructure]
     INFRA --> DOMAIN
     INFRA --> DB[(MongoDB)]
+    INFRA --> S3[(S3 storage)]
+    Client -->|downloads photos| S3
     APP -->|validates vehicle| CATALOG[catalog]
 ```
 
@@ -147,6 +153,24 @@ single query. Catalog names almost never change, which makes this denormalisatio
 Exact matches on indexed fields replace slow case-insensitive regular expressions, and codes such as
 `APPLE_CARPLAY_ANDROID_AUTO` keep the API language-neutral: the frontend translates them.
 
+**Photos in object storage, metadata in MongoDB.**
+Image bytes never go into MongoDB documents (16 MB limit, heavy queries and backups) nor through the API when they are
+viewed. They are stored with the S3 API, which works unchanged with SeaweedFS locally, AWS S3, Cloudflare R2 or
+Backblaze B2, and browsers download them directly from the storage. The car document only keeps each photo's id,
+size and order; URLs are built at response time from a configured base URL, so moving to a CDN is a configuration change.
+
+**Every uploaded photo is untrusted.**
+The format is detected from the file's first bytes, not its name or `Content-Type`. Dimensions are read from the header
+and anything above 40 megapixels is rejected before decoding, to defeat decompression bombs. Photos are re-encoded as
+JPEG, which applies the EXIF rotation and then discards all metadata, including the GPS position of the phone. Each
+photo is stored in three sizes (400, 1024 and 1920 px) so search pages load small thumbnails. Storage keys use random
+ids, never the uploaded file name.
+
+**Two systems, no distributed transaction.**
+Files are stored before the car is saved; if saving fails, the files just written are deleted. On deletion, the car is
+updated first and files are removed afterwards, so the worst case is an orphaned file, never a broken image. Photo files
+are immutable and cached for a year by browsers and CDNs.
+
 **Immutable records for the domain.**
 State changes return a new instance (`car.changeStatus(SOLD)`), which keeps the rules in one place and works
 naturally with Spring Data's support for immutable entities, versioning and auditing.
@@ -164,16 +188,19 @@ naturally with Spring Data's support for immutable entities, versioning and audi
 ./mvnw spring-boot:run
 ```
 
-Spring Boot starts MongoDB from `compose.yaml` automatically, loads the catalog, and serves the API on port **8050**.
+Spring Boot starts MongoDB and SeaweedFS from `compose.yaml` automatically, loads the catalog, creates the photo
+bucket and serves the API on port **8050**.
 
 | URL                                           | What                         |
 |-----------------------------------------------|------------------------------|
 | http://localhost:8050/swagger-ui.html         | Interactive API documentation |
 | http://localhost:8050/v3/api-docs             | OpenAPI specification         |
 | http://localhost:8050/actuator/health         | Health check                  |
+| http://localhost:8888                         | SeaweedFS file browser (photos under `buckets/car-photos`) |
 
 MongoDB is exposed on `localhost:27018` (`mongodb://root:secret@localhost:27018/?authSource=admin`), database
-`car_marketplace`. Its data is kept in a Docker volume; `docker compose down -v` resets it.
+`car_marketplace`. SeaweedFS serves photos on `localhost:8333`: anyone can read a photo, only the API can write or delete.
+Both keep their data in Docker volumes; `docker compose down -v` resets them.
 
 ### Run the tests
 
@@ -181,7 +208,8 @@ MongoDB is exposed on `localhost:27018` (`mongodb://root:secret@localhost:27018/
 ./mvnw verify
 ```
 
-Docker must be running: repository and end-to-end tests start a throwaway MongoDB 8.0 with Testcontainers.
+Docker must be running: repository and end-to-end tests start throwaway MongoDB and SeaweedFS containers with
+Testcontainers.
 
 ## API
 
@@ -204,7 +232,40 @@ Base path: `/api/v1`
 | GET    | `/cars`                 | Search listings (filters + pagination)  | 200     |
 | PUT    | `/cars/{id}`            | Replace a listing's details             | 200     |
 | PATCH  | `/cars/{id}/status`     | Change status (`AVAILABLE`, `RESERVED`, `SOLD`) | 200 |
-| DELETE | `/cars/{id}`            | Delete a listing                        | 204     |
+| DELETE | `/cars/{id}`            | Delete a listing and its photos         | 204     |
+
+### Photos
+
+| Method | Path                               | Description                                    | Success |
+|--------|------------------------------------|------------------------------------------------|---------|
+| POST   | `/cars/{id}/photos`                | Upload photos (`multipart/form-data`, field `files`) | 201 |
+| PUT    | `/cars/{id}/photos/order`          | Reorder photos; the first is the cover         | 200     |
+| DELETE | `/cars/{id}/photos/{photoId}`      | Delete a photo and its files                   | 204     |
+
+Rules: JPEG, PNG or WebP, at most 10 MB and 40 megapixels per file, at most 10 photos per listing. HEIC must be
+converted by the client first.
+
+```bash
+curl -X POST http://localhost:8050/api/v1/cars/{id}/photos -F "files=@front.jpg" -F "files=@interior.jpg"
+```
+
+Every listing response includes its photos:
+
+```json
+"photos": [
+  {
+    "id": "3f2c9a1e-8b4d-4c1a-9f0e-2d6b7a5c1e90",
+    "width": 1920,
+    "height": 1080,
+    "uploadedAt": "2026-09-25T10:00:00Z",
+    "urls": {
+      "thumbnail": "http://localhost:8333/car-photos/cars/6ab5.../3f2c9a1e-.../thumbnail.jpg",
+      "medium": "http://localhost:8333/car-photos/cars/6ab5.../3f2c9a1e-.../medium.jpg",
+      "large": "http://localhost:8333/car-photos/cars/6ab5.../3f2c9a1e-.../large.jpg"
+    }
+  }
+]
+```
 
 ### Creating a listing
 
@@ -271,20 +332,21 @@ All errors use the Problem Details format:
 | 400    | Malformed request or invalid fields (listed in `errors`)                   |
 | 404    | Unknown car or brand                                                       |
 | 409    | Illegal status change, sold car edited, or concurrent modification        |
-| 422    | Business rule violated (catalog mismatch, inconsistent engine, …)          |
+| 413    | Uploaded file larger than 10 MB                                            |
+| 422    | Business rule violated (catalog mismatch, inconsistent engine, invalid photo, …) |
 
 ## Testing strategy
 
 | Level        | Scope                                             | Tooling                           |
 |--------------|---------------------------------------------------|-----------------------------------|
-| Unit         | Domain rules, catalog validation                  | JUnit 5, AssertJ, Mockito         |
+| Unit         | Domain rules, catalog validation, image pipeline  | JUnit 5, AssertJ, Mockito         |
 | Web slice    | Status codes, validation, JSON, error format      | `@WebMvcTest`, `MockMvcTester`    |
 | Persistence  | Every filter, storage format, versioning, indexes | `@DataMongoTest`, Testcontainers  |
-| End-to-end   | Real catalog, full listing lifecycle, search      | `@SpringBootTest`, Testcontainers |
+| End-to-end   | Real catalog, lifecycle, search, photo upload and public access | `@SpringBootTest`, Testcontainers |
 
 ## Roadmap
 
 - Users and authentication (sellers own their listings)
-- Photo upload
+- Direct-to-storage uploads with presigned URLs, for very high traffic
 - Location (governorate) filter
 - Keyset pagination for very deep result pages
