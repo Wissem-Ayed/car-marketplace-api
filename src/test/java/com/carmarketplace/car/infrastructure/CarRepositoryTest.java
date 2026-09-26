@@ -1,5 +1,6 @@
 package com.carmarketplace.car.infrastructure;
 
+import com.carmarketplace.TestUsers;
 import com.carmarketplace.TestcontainersConfiguration;
 import com.carmarketplace.car.domain.Car;
 import com.carmarketplace.car.domain.CarSearchCriteria;
@@ -63,7 +64,7 @@ class CarRepositoryTest {
                     aCar().brand("peugeot", "Peugeot").model("peugeot-208", "208").year(2022).price("52000")
                             .mileageKm(20_000).fuelType(FuelType.PETROL).transmission(Transmission.MANUAL)
                             .equipment(Equipment.ABS, Equipment.APPLE_CARPLAY_ANDROID_AUTO).build(),
-                    aCar().brand("kia", "Kia").model("kia-picanto", "Picanto").year(2019).price("30000")
+                    aCar().seller(TestUsers.SELLER_2).brand("kia", "Kia").model("kia-picanto", "Picanto").year(2019).price("30000")
                             .mileageKm(60_000).fuelType(FuelType.PETROL).transmission(Transmission.MANUAL).build(),
                     aCar().brand("mg", "MG").model("mg-mg4", "MG4").year(2023).price("110000")
                             .mileageKm(10_000).fuelType(FuelType.ELECTRIC).status(CarStatus.SOLD)
@@ -98,6 +99,11 @@ class CarRepositoryTest {
             assertThat(models(new SearchBuilder().fuelType(FuelType.PETROL).transmission(Transmission.MANUAL)))
                     .containsExactlyInAnyOrder("208", "Picanto");
             assertThat(models(new SearchBuilder().status(CarStatus.SOLD))).containsExactly("MG4");
+        }
+
+        @Test
+        void filtersBySeller() {
+            assertThat(models(new SearchBuilder().sellerId(TestUsers.SELLER_2.id()))).containsExactly("Picanto");
         }
 
         @Test
@@ -184,6 +190,12 @@ class CarRepositoryTest {
         private Transmission transmission;
         private CarStatus status;
         private List<Equipment> equipment;
+        private String sellerId;
+
+        SearchBuilder sellerId(String sellerId) {
+            this.sellerId = sellerId;
+            return this;
+        }
 
         SearchBuilder brandId(String brandId) {
             this.brandId = brandId;
@@ -237,7 +249,7 @@ class CarRepositoryTest {
 
         CarSearchCriteria build() {
             return new CarSearchCriteria(brandId, modelId, null, minPrice, maxPrice, minYear, null, maxMileageKm,
-                    fuelType, transmission, null, null, status, equipment);
+                    fuelType, transmission, null, null, status, equipment, sellerId);
         }
     }
 }

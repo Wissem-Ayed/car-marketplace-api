@@ -1,0 +1,167 @@
+{
+  "realm": "car-marketplace",
+  "displayName": "Car Marketplace",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "verifyEmail": true,
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@car-marketplace.test",
+    "fromDisplayName": "Car Marketplace",
+    "replyTo": "support@car-marketplace.test",
+    "auth": "false",
+    "ssl": "false",
+    "starttls": "false"
+  },
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "permanentLockout": false,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "passwordPolicy": "length(8) and notUsername",
+  "roles": {
+    "realm": [
+      {
+        "name": "USER",
+        "description": "Can publish listings and manage their own"
+      },
+      {
+        "name": "ADMIN",
+        "description": "Can moderate every listing"
+      },
+      {
+        "name": "default-roles-car-marketplace",
+        "description": "Roles given to every new account",
+        "composite": true,
+        "composites": {
+          "realm": ["USER"]
+        }
+      }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-car-marketplace"
+  },
+  "clients": [
+    {
+      "clientId": "car-marketplace-web",
+      "name": "Car Marketplace web app and Swagger UI",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8050/swagger-ui/oauth2-redirect.html",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8050",
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "car-marketplace-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "car-marketplace-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "car-marketplace-cli",
+      "name": "Local development tools and tests (password grant, never enable in production)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "protocolMappers": [
+        {
+          "name": "car-marketplace-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "car-marketplace-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "5f0c1a2e-0000-4000-8000-000000000001",
+      "username": "seller1",
+      "email": "seller1@car-marketplace.test",
+      "emailVerified": true,
+      "firstName": "Yasmine",
+      "lastName": "Ben Ali",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "seller1-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["default-roles-car-marketplace"]
+    },
+    {
+      "id": "5f0c1a2e-0000-4000-8000-000000000002",
+      "username": "seller2",
+      "email": "seller2@car-marketplace.test",
+      "emailVerified": true,
+      "firstName": "Karim",
+      "lastName": "Haddad",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "seller2-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["default-roles-car-marketplace"]
+    },
+    {
+      "id": "5f0c1a2e-0000-4000-8000-000000000003",
+      "username": "admin",
+      "email": "admin@car-marketplace.test",
+      "emailVerified": true,
+      "firstName": "Marketplace",
+      "lastName": "Moderator",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin-password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["default-roles-car-marketplace", "ADMIN"]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 package com.carmarketplace.car.domain;
 
 import com.carmarketplace.common.domain.BusinessRuleViolationException;
+import com.carmarketplace.common.domain.CurrentUser;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -24,8 +25,10 @@ import java.util.stream.Collectors;
 @CompoundIndex(name = "price", def = "{'price.amount': 1}")
 @CompoundIndex(name = "year", def = "{'vehicle.year': 1}")
 @CompoundIndex(name = "equipment", def = "{'equipment': 1}")
+@CompoundIndex(name = "seller", def = "{'seller.id': 1}")
 public record Car(
         @Id String id,
+        Seller seller,
         Vehicle vehicle,
         Engine engine,
         History history,
@@ -41,6 +44,7 @@ public record Car(
     public static final int MAX_PHOTOS = 10;
 
     public Car {
+        Objects.requireNonNull(seller, "seller must not be null");
         Objects.requireNonNull(vehicle, "vehicle must not be null");
         Objects.requireNonNull(engine, "engine must not be null");
         Objects.requireNonNull(history, "history must not be null");
@@ -53,16 +57,16 @@ public record Car(
         photos = photos == null ? List.of() : List.copyOf(photos);
     }
 
-    public static Car create(Vehicle vehicle, Engine engine, History history, Price price,
+    public static Car create(Seller seller, Vehicle vehicle, Engine engine, History history, Price price,
                              Set<Equipment> equipment, String description) {
-        return new Car(null, vehicle, engine, history, price, equipment, description, List.of(),
+        return new Car(null, seller, vehicle, engine, history, price, equipment, description, List.of(),
                 CarStatus.AVAILABLE, null, null, null);
     }
 
     public Car update(Vehicle vehicle, Engine engine, History history, Price price,
                       Set<Equipment> equipment, String description) {
         ensureEditable();
-        return new Car(id, vehicle, engine, history, price, equipment, description, photos,
+        return new Car(id, seller, vehicle, engine, history, price, equipment, description, photos,
                 status, version, createdAt, updatedAt);
     }
 
@@ -74,8 +78,18 @@ public record Car(
         if (!status.canTransitionTo(target)) {
             throw new IllegalCarStateException("Car %s cannot move from %s to %s".formatted(id, status, target));
         }
-        return new Car(id, vehicle, engine, history, price, equipment, description, photos,
+        return new Car(id, seller, vehicle, engine, history, price, equipment, description, photos,
                 target, version, createdAt, updatedAt);
+    }
+
+    public boolean isManageableBy(CurrentUser user) {
+        return user.isAdmin() || seller.id().equals(user.id());
+    }
+
+    public void ensureManageableBy(CurrentUser user) {
+        if (!isManageableBy(user)) {
+            throw new CarAccessDeniedException(id);
+        }
     }
 
     public void ensurePhotosCanBeAdded(int count) {
@@ -112,7 +126,7 @@ public record Car(
     }
 
     private Car withPhotos(List<Photo> newPhotos) {
-        return new Car(id, vehicle, engine, history, price, equipment, description, newPhotos,
+        return new Car(id, seller, vehicle, engine, history, price, equipment, description, newPhotos,
                 status, version, createdAt, updatedAt);
     }
 

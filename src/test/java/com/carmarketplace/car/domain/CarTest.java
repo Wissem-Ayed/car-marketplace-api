@@ -1,6 +1,7 @@
 package com.carmarketplace.car.domain;
 
 import com.carmarketplace.common.domain.BusinessRuleViolationException;
+import com.carmarketplace.TestUsers;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,7 +20,7 @@ class CarTest {
     void newCarIsAvailableAndNotYetPersisted() {
         Car template = aCar().build();
 
-        Car car = Car.create(template.vehicle(), template.engine(), template.history(), template.price(),
+        Car car = Car.create(template.seller(), template.vehicle(), template.engine(), template.history(), template.price(),
                 template.equipment(), template.description());
 
         assertThat(car.status()).isEqualTo(CarStatus.AVAILABLE);
@@ -84,7 +85,7 @@ class CarTest {
         @Test
         void replacesTheDetailsAndKeepsIdentityStatusAndAuditData() {
             Instant createdAt = Instant.parse("2026-01-01T10:00:00Z");
-            Car car = new Car("abc", aCar().build().vehicle(), aCar().build().engine(), aCar().build().history(),
+            Car car = new Car("abc", aCar().build().seller(), aCar().build().vehicle(), aCar().build().engine(), aCar().build().history(),
                     aCar().build().price(), aCar().build().equipment(), "old", List.of(), CarStatus.RESERVED, 3L, createdAt,
                     createdAt);
             Car newDetails = aCar().mileageKm(30_000).price("170000").build();
@@ -108,6 +109,34 @@ class CarTest {
                     car.equipment(), car.description()))
                     .isInstanceOf(IllegalCarStateException.class)
                     .hasMessage("Car abc is sold and can no longer be edited");
+        }
+    }
+
+    @Nested
+    class Ownership {
+
+        @Test
+        void theSellerCanManageTheirListing() {
+            Car car = aCar().seller(TestUsers.SELLER_1).build();
+
+            assertThat(car.isManageableBy(TestUsers.SELLER_1)).isTrue();
+        }
+
+        @Test
+        void anAdministratorCanManageAnyListing() {
+            Car car = aCar().seller(TestUsers.SELLER_1).build();
+
+            assertThat(car.isManageableBy(TestUsers.ADMIN)).isTrue();
+        }
+
+        @Test
+        void anotherUserCannotManageTheListing() {
+            Car car = aCar().id("abc").seller(TestUsers.SELLER_1).build();
+
+            assertThat(car.isManageableBy(TestUsers.SELLER_2)).isFalse();
+            assertThatThrownBy(() -> car.ensureManageableBy(TestUsers.SELLER_2))
+                    .isInstanceOf(CarAccessDeniedException.class)
+                    .hasMessage("Only the seller or an administrator can manage car abc");
         }
     }
 

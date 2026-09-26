@@ -4,10 +4,12 @@ import com.carmarketplace.car.domain.Car;
 import com.carmarketplace.car.domain.CarSearchCriteria;
 import com.carmarketplace.car.domain.CarStatus;
 import com.carmarketplace.car.domain.CatalogRef;
+import com.carmarketplace.car.domain.Seller;
 import com.carmarketplace.car.domain.Vehicle;
 import com.carmarketplace.car.infrastructure.CarRepository;
 import com.carmarketplace.catalog.application.CatalogSelection;
 import com.carmarketplace.catalog.application.CatalogService;
+import com.carmarketplace.common.domain.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,8 +23,8 @@ public class CarService {
     private final CatalogService catalogService;
     private final PhotoService photoService;
 
-    public Car createCar(CarDraft draft) {
-        Car car = Car.create(toVehicle(draft.vehicle()), draft.engine(), draft.history(), draft.price(),
+    public Car createCar(CarDraft draft, CurrentUser user) {
+        Car car = Car.create(Seller.of(user), toVehicle(draft.vehicle()), draft.engine(), draft.history(), draft.price(),
                 draft.equipment(), draft.description());
         return carRepository.save(car);
     }
@@ -35,22 +37,33 @@ public class CarService {
         return carRepository.search(criteria, pageable);
     }
 
-    public Car updateCar(String id, CarDraft draft) {
-        Car updated = getCar(id).update(toVehicle(draft.vehicle()), draft.engine(), draft.history(), draft.price(),
+    public Page<Car> getCarsOf(CurrentUser user, Pageable pageable) {
+        return carRepository.search(CarSearchCriteria.bySeller(user.id()), pageable);
+    }
+
+    public Car updateCar(String id, CarDraft draft, CurrentUser user) {
+        Car car = getManageableCar(id, user);
+        Car updated = car.update(toVehicle(draft.vehicle()), draft.engine(), draft.history(), draft.price(),
                 draft.equipment(), draft.description());
         return carRepository.save(updated);
     }
 
-    public Car changeStatus(String id, CarStatus status) {
-        Car car = getCar(id);
+    public Car changeStatus(String id, CarStatus status, CurrentUser user) {
+        Car car = getManageableCar(id, user);
         Car changed = car.changeStatus(status);
         return changed == car ? car : carRepository.save(changed);
     }
 
-    public void deleteCar(String id) {
-        Car car = getCar(id);
+    public void deleteCar(String id, CurrentUser user) {
+        Car car = getManageableCar(id, user);
         carRepository.delete(car);
         photoService.deleteAllPhotos(car);
+    }
+
+    private Car getManageableCar(String id, CurrentUser user) {
+        Car car = getCar(id);
+        car.ensureManageableBy(user);
+        return car;
     }
 
     private Vehicle toVehicle(CarDraft.VehicleSpec spec) {

@@ -54,10 +54,13 @@ public record CarSearchParams(
 
         @Parameter(description = "Equipment the car must have; every code is required. "
                 + "Repeat the parameter or separate codes with commas. Codes: `GET /api/v1/equipment`")
-        List<Equipment> equipment) {
+        List<Equipment> equipment,
+
+        @Parameter(description = "Id of the seller, to list one seller's cars", example = "5f0c1a2e-0000-4000-8000-000000000001")
+        String sellerId) {
 
     public CarSearchCriteria toCriteria() {
         return new CarSearchCriteria(brandId, modelId, generationId, minPrice, maxPrice, minYear, maxYear,
-                maxMileageKm, fuelType, transmission, bodyType, condition, status, equipment);
+                maxMileageKm, fuelType, transmission, bodyType, condition, status, equipment, sellerId);
     }
 }

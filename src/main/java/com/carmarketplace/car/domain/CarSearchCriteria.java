@@ -17,5 +17,11 @@ public record CarSearchCriteria(
         BodyType bodyType,
         Condition condition,
         CarStatus status,
-        List<Equipment> equipment) {
+        List<Equipment> equipment,
+        String sellerId) {
+
+    public static CarSearchCriteria bySeller(String sellerId) {
+        return new CarSearchCriteria(null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null, sellerId);
+    }
 }

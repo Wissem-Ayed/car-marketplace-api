@@ -5,6 +5,7 @@ import com.carmarketplace.car.domain.Engine;
 import com.carmarketplace.car.domain.Equipment;
 import com.carmarketplace.car.domain.History;
 import com.carmarketplace.car.domain.Price;
+import com.carmarketplace.car.domain.Seller;
 import com.carmarketplace.car.domain.Vehicle;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -15,6 +16,8 @@ import java.util.Set;
 @Schema(name = "Car", description = "A car listing")
 public record CarResponse(
         String id,
+        @Schema(description = "Who published the listing")
+        Seller seller,
         Vehicle vehicle,
         Engine engine,
         History history,

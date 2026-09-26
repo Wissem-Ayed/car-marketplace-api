@@ -1,5 +1,8 @@
 package com.carmarketplace.car.domain;
 
+import com.carmarketplace.TestUsers;
+import com.carmarketplace.common.domain.CurrentUser;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Arrays;
@@ -9,6 +12,7 @@ import java.util.Set;
 public final class CarBuilder {
 
     private String id;
+    private Seller seller = Seller.of(TestUsers.SELLER_1);
     private CatalogRef brand = new CatalogRef("mercedes-benz", "Mercedes-Benz");
     private CatalogRef model = new CatalogRef("mercedes-benz-cla", "CLA");
     private CatalogRef generation = new CatalogRef("c118", "C118, X118");
@@ -26,6 +30,11 @@ public final class CarBuilder {
 
     public static CarBuilder aCar() {
         return new CarBuilder();
+    }
+
+    public CarBuilder seller(CurrentUser user) {
+        this.seller = Seller.of(user);
+        return this;
     }
 
     public CarBuilder id(String id) {
@@ -89,6 +98,7 @@ public final class CarBuilder {
         boolean electric = fuelType == FuelType.ELECTRIC;
         return new Car(
                 id,
+                seller,
                 new Vehicle(brand, model, generation, "Test trim", year, BodyType.SEDAN, 4, 5, Color.GREY),
                 new Engine(fuelType, transmission, 150, 8, electric ? null : 4, electric ? null : 1500),
                 new History(mileageKm, true, Condition.VERY_GOOD, Origin.LOCAL, true, 1),

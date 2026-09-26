@@ -36,6 +36,7 @@ class CarSearchRepositoryImpl implements CarSearchRepository {
         addEquals(filters, "engine.transmission", criteria.transmission());
         addEquals(filters, "history.condition", criteria.condition());
         addEquals(filters, "status", criteria.status());
+        addEquals(filters, "seller.id", criteria.sellerId());
         addRange(filters, "price.amount", criteria.minPrice(), criteria.maxPrice());
         addRange(filters, "vehicle.year", criteria.minYear(), criteria.maxYear());
         addRange(filters, "history.mileageKm", null, criteria.maxMileageKm());

@@ -2,11 +2,13 @@ package com.carmarketplace.car.api;
 
 import com.carmarketplace.car.application.CarService;
 import com.carmarketplace.car.domain.Car;
+import com.carmarketplace.common.domain.CurrentUser;
 import com.carmarketplace.config.OpenApiConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,14 +51,16 @@ public class CarController {
             description = """
                     Brand, model and generation are validated against the catalog. `generationId` can be \
                     omitted when only one generation of the model was produced in the given year. \
-                    A new listing is `AVAILABLE`.""")
+                    The logged-in user becomes the seller. A new listing is `AVAILABLE`.""")
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME)
+    @ApiResponse(responseCode = "401", description = "Missing, invalid or expired access token")
     @ApiResponse(responseCode = "201", description = "Listing created",
             headers = @Header(name = "Location", description = "URL of the new listing"))
     @ApiResponse(responseCode = "400", description = "Malformed JSON or invalid fields, listed in `errors`")
     @ApiResponse(responseCode = "422",
             description = "Business rule violated: unknown catalog ids, year outside the generation, inconsistent engine…")
-    public ResponseEntity<CarResponse> createCar(@Valid @RequestBody CarRequest request) {
-        Car created = carService.createCar(request.toDraft());
+    public ResponseEntity<CarResponse> createCar(@Valid @RequestBody CarRequest request, CurrentUser user) {
+        Car created = carService.createCar(request.toDraft(), user);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(created.id())
@@ -96,11 +100,15 @@ public class CarController {
     @ApiResponse(responseCode = "404", description = "No listing with this id")
     @ApiResponse(responseCode = "409",
             description = "The listing is sold, or it was modified by another request in the meantime")
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME)
+    @ApiResponse(responseCode = "401", description = "Missing, invalid or expired access token")
+    @ApiResponse(responseCode = "403", description = "Only the seller or an administrator can do this")
     @ApiResponse(responseCode = "422", description = "Business rule violated")
     public CarResponse updateCar(
             @Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String id,
-            @Valid @RequestBody CarRequest request) {
-        return mapper.toResponse(carService.updateCar(id, request.toDraft()));
+            @Valid @RequestBody CarRequest request,
+            CurrentUser user) {
+        return mapper.toResponse(carService.updateCar(id, request.toDraft(), user));
     }
 
     @PatchMapping("/{id}/status")
@@ -110,19 +118,28 @@ public class CarController {
     @ApiResponse(responseCode = "200", description = "The listing with its new status")
     @ApiResponse(responseCode = "400", description = "Missing or unknown status")
     @ApiResponse(responseCode = "404", description = "No listing with this id")
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME)
+    @ApiResponse(responseCode = "401", description = "Missing, invalid or expired access token")
+    @ApiResponse(responseCode = "403", description = "Only the seller or an administrator can do this")
     @ApiResponse(responseCode = "409", description = "The move is not allowed from the current status")
     public CarResponse changeStatus(
             @Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String id,
-            @Valid @RequestBody StatusRequest request) {
-        return mapper.toResponse(carService.changeStatus(id, request.status()));
+            @Valid @RequestBody StatusRequest request,
+            CurrentUser user) {
+        return mapper.toResponse(carService.changeStatus(id, request.status(), user));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a car listing")
     @ApiResponse(responseCode = "204", description = "Listing deleted")
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME)
+    @ApiResponse(responseCode = "401", description = "Missing, invalid or expired access token")
+    @ApiResponse(responseCode = "403", description = "Only the seller or an administrator can do this")
     @ApiResponse(responseCode = "404", description = "No listing with this id")
-    public void deleteCar(@Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String id) {
-        carService.deleteCar(id);
+    public void deleteCar(
+            @Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String id,
+            CurrentUser user) {
+        carService.deleteCar(id, user);
     }
 }

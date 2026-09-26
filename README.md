@@ -11,6 +11,8 @@ publish a car that doesn't exist.
 
 ## Highlights
 
+- **Industry-standard authentication** – OpenID Connect with Keycloak; the API is an OAuth 2 resource server that
+  validates signed JWTs and never handles passwords. Sellers own their listings, administrators can moderate any.
 - **Catalog-validated listings** – brand, model and generation come from reference data; the production years of the
   generation are checked, and the generation is inferred from the year when it's unambiguous.
 - **Rich domain model** – immutable records, value objects (`Vehicle`, `Engine`, `History`, `Price`) and business
@@ -23,8 +25,8 @@ publish a car that doesn't exist.
   sortable, backed by MongoDB indexes.
 - **Consistent errors** – every error follows [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) Problem Details,
   including the list of invalid fields on validation errors.
-- **Tested at every level** – 96 tests: domain unit tests, controller slice tests, repository tests and end-to-end
-  tests against real MongoDB and SeaweedFS containers started by Testcontainers.
+- **Tested at every level** – 115 tests: domain unit tests, controller slice tests, repository tests and end-to-end
+  tests against real MongoDB, SeaweedFS and Keycloak containers started by Testcontainers.
 
 ## Tech stack
 
@@ -33,6 +35,7 @@ publish a car that doesn't exist.
 | Language      | Java 21 (records, switch expressions, text blocks)             |
 | Framework     | Spring Boot 4.1 (Spring MVC, Bean Validation, Actuator)        |
 | Database      | MongoDB 8.0 with Spring Data MongoDB                           |
+| Security      | Spring Security OAuth 2 Resource Server, Keycloak 26 (OIDC)    |
 | File storage  | S3 API (AWS SDK v2), SeaweedFS locally                         |
 | Images        | Thumbnailator, TwelveMonkeys ImageIO (WebP)                    |
 | API docs      | OpenAPI 3 / Swagger UI (springdoc)                             |
@@ -59,7 +62,8 @@ com.carmarketplace
 
 ```mermaid
 flowchart LR
-    Client -->|HTTP / JSON| API[api]
+    Client -->|logs in| KC[Keycloak]
+    Client -->|HTTP + JWT| API[api]
     API --> APP[application]
     APP --> DOMAIN[domain]
     APP --> INFRA[infrastructure]
@@ -171,6 +175,18 @@ Files are stored before the car is saved; if saving fails, the files just writte
 updated first and files are removed afterwards, so the worst case is an orphaned file, never a broken image. Photo files
 are immutable and cached for a year by browsers and CDNs.
 
+**Authentication is delegated to an identity provider.**
+Passwords, registration, email verification, account lockout and password reset live in Keycloak, a dedicated and battle-tested product.
+The API is an OAuth 2 *resource server*: on every request it checks the JWT's signature (with Keycloak's published
+keys), issuer, audience and expiry, then trusts the claims. It is stateless (no session, no cookie, no CSRF surface) and
+stores no credentials. The code only speaks standard OpenID Connect, so Auth0, Okta or Cognito could replace Keycloak
+by changing the issuer URL. Browsers and Swagger UI log in with the authorization code flow and PKCE.
+
+**Ownership is a domain rule.**
+The seller of a listing is always taken from the token (`sub` claim), never from the request body. Services load the
+listing and call `car.ensureManageableBy(user)`: the seller or an `ADMIN` may manage it, anyone else gets `403`. The
+domain receives a plain `CurrentUser`, not a Spring Security type.
+
 **Immutable records for the domain.**
 State changes return a new instance (`car.changeStatus(SOLD)`), which keeps the rules in one place and works
 naturally with Spring Data's support for immutable entities, versioning and auditing.
@@ -188,19 +204,49 @@ naturally with Spring Data's support for immutable entities, versioning and audi
 ./mvnw spring-boot:run
 ```
 
-Spring Boot starts MongoDB and SeaweedFS from `compose.yaml` automatically, loads the catalog, creates the photo
-bucket and serves the API on port **8050**.
+Spring Boot starts MongoDB, SeaweedFS, Keycloak and Mailpit from `compose.yaml` automatically, loads the catalog, creates the
+photo bucket and serves the API on port **8050**. Keycloak takes about 40 seconds on its first start.
 
 | URL                                           | What                         |
 |-----------------------------------------------|------------------------------|
 | http://localhost:8050/swagger-ui.html         | Interactive API documentation |
 | http://localhost:8050/v3/api-docs             | OpenAPI specification         |
 | http://localhost:8050/actuator/health         | Health check                  |
+| http://localhost:8180                         | Keycloak (admin console: `admin` / `admin`) |
+| http://localhost:8025                         | Mailpit inbox: every email sent by Keycloak (verification, password reset) |
 | http://localhost:8888                         | SeaweedFS file browser (photos under `buckets/car-photos`) |
 
 MongoDB is exposed on `localhost:27018` (`mongodb://root:secret@localhost:27018/?authSource=admin`), database
 `car_marketplace`. SeaweedFS serves photos on `localhost:8333`: anyone can read a photo, only the API can write or delete.
 Both keep their data in Docker volumes; `docker compose down -v` resets them.
+
+### Demo accounts
+
+The Keycloak realm is imported from `docker/keycloak/car-marketplace-realm.json` with three development accounts:
+
+| Username  | Password           | Roles         |
+|-----------|--------------------|---------------|
+| `seller1` | `seller1-password` | USER          |
+| `seller2` | `seller2-password` | USER          |
+| `admin`   | `admin-password`   | USER, ADMIN   |
+
+New accounts register from the Keycloak login page ("Register" link). They must confirm their email address before
+logging in, and get the `USER` role. "Forgot password?" sends a reset link. Locally, no email leaves your machine:
+Keycloak sends them to Mailpit, where you can open them and click the links at http://localhost:8025. Users manage their
+profile, password and sessions in the account console:
+http://localhost:8180/realms/car-marketplace/account
+
+In Swagger UI, click **Authorize**, then **Authorize** again in the `keycloak` dialog and log in: every request then
+carries the access token. From a terminal, get a token with the development client (password grant, never enable it
+in production):
+
+```bash
+TOKEN=$(curl -s http://localhost:8180/realms/car-marketplace/protocol/openid-connect/token \
+  -d grant_type=password -d client_id=car-marketplace-cli -d username=seller1 -d password=seller1-password \
+  | sed -E 's/.*"access_token":"([^"]+)".*/\1/')
+
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8050/api/v1/me
+```
 
 ### Run the tests
 
@@ -208,12 +254,15 @@ Both keep their data in Docker volumes; `docker compose down -v` resets them.
 ./mvnw verify
 ```
 
-Docker must be running: repository and end-to-end tests start throwaway MongoDB and SeaweedFS containers with
-Testcontainers.
+Docker must be running: repository and end-to-end tests start throwaway MongoDB, SeaweedFS and Keycloak containers
+with Testcontainers.
 
 ## API
 
 Base path: `/api/v1`
+
+Browsing (`GET` on listings and reference data) is public. Every other endpoint requires an access token:
+`Authorization: Bearer <token>`.
 
 ### Catalog
 
@@ -227,12 +276,19 @@ Base path: `/api/v1`
 
 | Method | Path                    | Description                             | Success |
 |--------|-------------------------|-----------------------------------------|---------|
-| POST   | `/cars`                 | Publish a listing                       | 201 + `Location` |
+| POST   | `/cars`                 | Publish a listing; you become the seller | 201 + `Location` |
 | GET    | `/cars/{id}`            | Get a listing                           | 200     |
 | GET    | `/cars`                 | Search listings (filters + pagination)  | 200     |
-| PUT    | `/cars/{id}`            | Replace a listing's details             | 200     |
+| PUT    | `/cars/{id}`            | Replace a listing's details (seller or admin) | 200 |
 | PATCH  | `/cars/{id}/status`     | Change status (`AVAILABLE`, `RESERVED`, `SOLD`) | 200 |
 | DELETE | `/cars/{id}`            | Delete a listing and its photos         | 204     |
+
+### My account
+
+| Method | Path          | Description                                   |
+|--------|---------------|-----------------------------------------------|
+| GET    | `/me`         | The logged-in user: id, name and roles        |
+| GET    | `/me/cars`    | The logged-in user's listings, any status     |
 
 ### Photos
 
@@ -298,6 +354,7 @@ curl -X POST http://localhost:8050/api/v1/cars \
 | `maxMileageKm`              | `maxMileageKm=100000`             |
 | `fuelType`, `transmission`, `bodyType`, `condition`, `status` | `fuelType=DIESEL` |
 | `equipment` (all required)  | `equipment=ABS,REAR_CAMERA`       |
+| `sellerId`                  | `sellerId=5f0c1a2e-0000-4000-8000-000000000001` |
 | `page`, `size` (max 100), `sort` | `sort=price.amount,asc`      |
 
 ```bash
@@ -330,6 +387,8 @@ All errors use the Problem Details format:
 | Status | Meaning                                                                    |
 |--------|----------------------------------------------------------------------------|
 | 400    | Malformed request or invalid fields (listed in `errors`)                   |
+| 401    | Missing, invalid or expired access token (`WWW-Authenticate: Bearer`)      |
+| 403    | Logged in, but not the seller of the listing nor an administrator          |
 | 404    | Unknown car or brand                                                       |
 | 409    | Illegal status change, sold car edited, or concurrent modification        |
 | 413    | Uploaded file larger than 10 MB                                            |
@@ -342,11 +401,13 @@ All errors use the Problem Details format:
 | Unit         | Domain rules, catalog validation, image pipeline  | JUnit 5, AssertJ, Mockito         |
 | Web slice    | Status codes, validation, JSON, error format      | `@WebMvcTest`, `MockMvcTester`    |
 | Persistence  | Every filter, storage format, versioning, indexes | `@DataMongoTest`, Testcontainers  |
+| Security     | 401/403 rules, ownership, roles                   | `spring-security-test` JWTs       |
 | End-to-end   | Real catalog, lifecycle, search, photo upload and public access | `@SpringBootTest`, Testcontainers |
+| Identity     | Real Keycloak logins, roles, forged-token rejection, password-reset email | `@SpringBootTest`, Keycloak and Mailpit containers |
 
 ## Roadmap
 
-- Users and authentication (sellers own their listings)
+- Seller contact details and messaging between buyers and sellers
 - Direct-to-storage uploads with presigned URLs, for very high traffic
 - Location (governorate) filter
 - Keyset pagination for very deep result pages

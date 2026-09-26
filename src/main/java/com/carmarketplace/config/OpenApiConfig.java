@@ -1,5 +1,7 @@
 package com.carmarketplace.config;
 
+import com.carmarketplace.common.domain.CurrentUser;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
@@ -11,8 +13,14 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.security.OAuthFlow;
+import io.swagger.v3.oas.models.security.OAuthFlows;
+import io.swagger.v3.oas.models.security.Scopes;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.utils.SpringDocUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,12 +29,18 @@ public class OpenApiConfig {
 
     public static final String CARS_TAG = "Car listings";
     public static final String REFERENCE_DATA_TAG = "Reference data";
+    public static final String ACCOUNT_TAG = "My account";
+    public static final String SECURITY_SCHEME = "keycloak";
 
     private static final String PROBLEM_SCHEMA = "Problem";
     private static final String PROBLEM_MEDIA_TYPE = "application/problem+json";
 
+    static {
+        SpringDocUtils.getConfig().addRequestWrapperToIgnore(CurrentUser.class);
+    }
+
     @Bean
-    OpenAPI carMarketplaceOpenApi() {
+    OpenAPI carMarketplaceOpenApi(@Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuer) {
         return new OpenAPI()
                 .info(new Info()
                         .title("Car Marketplace API")
@@ -40,6 +54,8 @@ public class OpenApiConfig {
                                 * Prices are in **Tunisian dinars (TND)** with up to 3 decimals.
                                 * Every error follows **RFC 9457 Problem Details** \
                                 (`application/problem+json`).
+                                * Browsing is public. Publishing and managing listings requires logging in: click \
+                                **Authorize**, then log in on the Keycloak page (demo accounts are listed in the README).
                                 """)
                         .contact(new Contact().name("Wissem Ayed").url("https://github.com/Wissem-Ayed")))
                 .externalDocs(new ExternalDocumentation()
@@ -47,7 +63,17 @@ public class OpenApiConfig {
                         .url("https://github.com/Wissem-Ayed/car-marketplace-api"))
                 .addTagsItem(new Tag().name(CARS_TAG).description("Publish, search and manage car listings"))
                 .addTagsItem(new Tag().name(REFERENCE_DATA_TAG)
-                        .description("Brands, models, generations and equipment codes used to build a listing"));
+                        .description("Brands, models, generations and equipment codes used to build a listing"))
+                .addTagsItem(new Tag().name(ACCOUNT_TAG).description("The logged-in user and their listings"))
+                .components(new Components().addSecuritySchemes(SECURITY_SCHEME, new SecurityScheme()
+                        .type(SecurityScheme.Type.OAUTH2)
+                        .description("OpenID Connect login with Keycloak (authorization code flow with PKCE)")
+                        .flows(new OAuthFlows().authorizationCode(new OAuthFlow()
+                                .authorizationUrl(issuer + "/protocol/openid-connect/auth")
+                                .tokenUrl(issuer + "/protocol/openid-connect/token")
+                                .scopes(new Scopes()
+                                        .addString("openid", "Sign in")
+                                        .addString("profile", "Your name"))))));
     }
 
     @Bean

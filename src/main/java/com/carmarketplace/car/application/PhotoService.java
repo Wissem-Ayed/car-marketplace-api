@@ -4,6 +4,7 @@ import com.carmarketplace.car.domain.Car;
 import com.carmarketplace.car.domain.Photo;
 import com.carmarketplace.car.domain.PhotoVariant;
 import com.carmarketplace.car.infrastructure.CarRepository;
+import com.carmarketplace.common.domain.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,8 +30,8 @@ public class PhotoService {
     private final PhotoStorage photoStorage;
     private final Clock clock;
 
-    public Car addPhotos(String carId, List<PhotoUpload> uploads) {
-        Car car = getCar(carId);
+    public Car addPhotos(String carId, List<PhotoUpload> uploads, CurrentUser user) {
+        Car car = getManageableCar(carId, user);
         car.ensurePhotosCanBeAdded(uploads.size());
         List<ProcessedPhoto> processed = uploads.stream().map(photoProcessor::process).toList();
 
@@ -53,14 +54,14 @@ public class PhotoService {
         }
     }
 
-    public Car removePhoto(String carId, String photoId) {
-        Car updated = carRepository.save(getCar(carId).removePhoto(photoId));
+    public Car removePhoto(String carId, String photoId, CurrentUser user) {
+        Car updated = carRepository.save(getManageableCar(carId, user).removePhoto(photoId));
         deleteQuietly(storageKeys(carId, photoId));
         return updated;
     }
 
-    public Car reorderPhotos(String carId, List<String> photoIds) {
-        return carRepository.save(getCar(carId).reorderPhotos(photoIds));
+    public Car reorderPhotos(String carId, List<String> photoIds, CurrentUser user) {
+        return carRepository.save(getManageableCar(carId, user).reorderPhotos(photoIds));
     }
 
     public void deleteAllPhotos(Car car) {
@@ -69,8 +70,10 @@ public class PhotoService {
                 .toList());
     }
 
-    private Car getCar(String carId) {
-        return carRepository.findById(carId).orElseThrow(() -> new CarNotFoundException(carId));
+    private Car getManageableCar(String carId, CurrentUser user) {
+        Car car = carRepository.findById(carId).orElseThrow(() -> new CarNotFoundException(carId));
+        car.ensureManageableBy(user);
+        return car;
     }
 
     private static List<String> storageKeys(String carId, String photoId) {

@@ -16,6 +16,7 @@ public class CarResponseMapper {
     public CarResponse toResponse(Car car) {
         return new CarResponse(
                 car.id(),
+                car.seller(),
                 car.vehicle(),
                 car.engine(),
                 car.history(),

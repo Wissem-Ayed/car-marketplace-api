@@ -2,6 +2,7 @@ package com.carmarketplace.common.api;
 
 import com.carmarketplace.common.domain.BusinessRuleViolationException;
 import com.carmarketplace.common.domain.ConflictException;
+import com.carmarketplace.common.domain.ForbiddenException;
 import com.carmarketplace.common.domain.NotFoundException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +25,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ProblemDetail handleNotFound(NotFoundException ex) {
         return problem(HttpStatus.NOT_FOUND, "Resource not found", ex.getMessage());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ProblemDetail handleForbidden(ForbiddenException ex) {
+        return problem(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage());
     }
 
     @ExceptionHandler(BusinessRuleViolationException.class)

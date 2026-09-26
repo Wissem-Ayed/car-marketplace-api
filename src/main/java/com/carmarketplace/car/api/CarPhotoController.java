@@ -2,10 +2,12 @@ package com.carmarketplace.car.api;
 
 import com.carmarketplace.car.application.PhotoService;
 import com.carmarketplace.car.application.PhotoUpload;
+import com.carmarketplace.common.domain.CurrentUser;
 import com.carmarketplace.config.OpenApiConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,9 @@ public class CarPhotoController {
                     re-encoded as JPEG in three sizes, and its metadata (including GPS location) is removed.""")
     @ApiResponse(responseCode = "201", description = "Photos added; returns the listing with every photo")
     @ApiResponse(responseCode = "400", description = "No file sent")
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME)
+    @ApiResponse(responseCode = "401", description = "Missing, invalid or expired access token")
+    @ApiResponse(responseCode = "403", description = "Only the seller or an administrator can do this")
     @ApiResponse(responseCode = "404", description = "No listing with this id")
     @ApiResponse(responseCode = "409", description = "The listing is sold, or was modified by another request")
     @ApiResponse(responseCode = "413", description = "A file is larger than 10 MB")
@@ -55,33 +60,43 @@ public class CarPhotoController {
             description = "Unsupported or unreadable image, too many pixels, or more than 10 photos in total")
     public CarResponse uploadPhotos(
             @Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String carId,
-            @Parameter(description = "Image files") @RequestPart("files") List<MultipartFile> files) {
-        return mapper.toResponse(photoService.addPhotos(carId, files.stream().map(CarPhotoController::toUpload).toList()));
+            @Parameter(description = "Image files") @RequestPart("files") List<MultipartFile> files,
+            CurrentUser user) {
+        List<PhotoUpload> uploads = files.stream().map(CarPhotoController::toUpload).toList();
+        return mapper.toResponse(photoService.addPhotos(carId, uploads, user));
     }
 
     @PutMapping("/order")
     @Operation(summary = "Reorder photos", description = "The first photo of the new order becomes the cover.")
     @ApiResponse(responseCode = "200", description = "The listing with its photos in the new order")
     @ApiResponse(responseCode = "400", description = "Missing or empty list")
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME)
+    @ApiResponse(responseCode = "401", description = "Missing, invalid or expired access token")
+    @ApiResponse(responseCode = "403", description = "Only the seller or an administrator can do this")
     @ApiResponse(responseCode = "404", description = "No listing with this id")
     @ApiResponse(responseCode = "409", description = "The listing is sold, or was modified by another request")
     @ApiResponse(responseCode = "422", description = "The list doesn't contain each photo of the car exactly once")
     public CarResponse reorderPhotos(
             @Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String carId,
-            @Valid @RequestBody PhotoOrderRequest request) {
-        return mapper.toResponse(photoService.reorderPhotos(carId, request.photoIds()));
+            @Valid @RequestBody PhotoOrderRequest request,
+            CurrentUser user) {
+        return mapper.toResponse(photoService.reorderPhotos(carId, request.photoIds(), user));
     }
 
     @DeleteMapping("/{photoId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a photo", description = "Removes the photo from the listing and deletes its files.")
     @ApiResponse(responseCode = "204", description = "Photo deleted")
+    @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME)
+    @ApiResponse(responseCode = "401", description = "Missing, invalid or expired access token")
+    @ApiResponse(responseCode = "403", description = "Only the seller or an administrator can do this")
     @ApiResponse(responseCode = "404", description = "No listing with this id, or no such photo on it")
     @ApiResponse(responseCode = "409", description = "The listing is sold, or was modified by another request")
     public void deletePhoto(
             @Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String carId,
-            @Parameter(description = "Id of the photo") @PathVariable String photoId) {
-        photoService.removePhoto(carId, photoId);
+            @Parameter(description = "Id of the photo") @PathVariable String photoId,
+            CurrentUser user) {
+        photoService.removePhoto(carId, photoId, user);
     }
 
     private static PhotoUpload toUpload(MultipartFile file) {

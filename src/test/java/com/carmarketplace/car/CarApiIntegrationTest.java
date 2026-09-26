@@ -2,6 +2,7 @@ package com.carmarketplace.car;
 
 import com.carmarketplace.TestcontainersConfiguration;
 import com.carmarketplace.car.api.CarJson;
+import com.carmarketplace.common.domain.CurrentUser;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
+import static com.carmarketplace.TestUsers.ADMIN;
+import static com.carmarketplace.TestUsers.SELLER_1;
+import static com.carmarketplace.TestUsers.SELLER_2;
+import static com.carmarketplace.TestUsers.loggedInAs;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -52,6 +57,58 @@ class CarApiIntegrationTest {
     }
 
     @Test
+    void theLoggedInUserBecomesTheSeller() {
+        assertThat(create(CarJson.VALID, SELLER_2))
+                .hasStatus(HttpStatus.CREATED)
+                .bodyJson()
+                .satisfies(json -> {
+                    assertThat(json).extractingPath("$.seller.id").isEqualTo(SELLER_2.id());
+                    assertThat(json).extractingPath("$.seller.name").isEqualTo("Karim Haddad");
+                });
+    }
+
+    @Test
+    void anonymousVisitorsCanBrowseButNotPublish() {
+        String id = idOf(create(CarJson.VALID));
+
+        assertThat(mvc.get().uri("/api/v1/cars/" + id)).hasStatusOk();
+        assertThat(mvc.post().uri("/api/v1/cars").contentType(MediaType.APPLICATION_JSON).content(CarJson.VALID))
+                .hasStatus(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void onlyTheSellerOrAnAdministratorCanManageAListing() {
+        String id = idOf(create(CarJson.VALID, SELLER_1));
+
+        assertThat(changeStatus(id, "RESERVED", SELLER_2)).hasStatus(HttpStatus.FORBIDDEN);
+        assertThat(mvc.put().uri("/api/v1/cars/" + id).with(loggedInAs(SELLER_2))
+                .contentType(MediaType.APPLICATION_JSON).content(CarJson.VALID))
+                .hasStatus(HttpStatus.FORBIDDEN);
+        assertThat(mvc.delete().uri("/api/v1/cars/" + id).with(loggedInAs(SELLER_2))).hasStatus(HttpStatus.FORBIDDEN);
+
+        assertThat(changeStatus(id, "RESERVED", ADMIN)).hasStatusOk();
+        assertThat(changeStatus(id, "AVAILABLE", SELLER_1)).hasStatusOk();
+    }
+
+    @Test
+    void listsTheListingsOfTheLoggedInUser() {
+        create(CarJson.VALID, SELLER_1);
+        create(CarJson.car("peugeot", "peugeot-208", "p21", 2021), SELLER_2);
+
+        assertThat(mvc.get().uri("/api/v1/me/cars").with(loggedInAs(SELLER_1)))
+                .hasStatusOk()
+                .bodyJson()
+                .satisfies(json -> {
+                    assertThat(json).extractingPath("$.page.totalElements").isEqualTo(1);
+                    assertThat(json).extractingPath("$.content[0].seller.id").isEqualTo(SELLER_1.id());
+                });
+        assertThat(mvc.get().uri("/api/v1/me").with(loggedInAs(ADMIN)))
+                .hasStatusOk()
+                .bodyJson().extractingPath("$.roles").asArray().containsExactlyInAnyOrder("USER", "ADMIN");
+        assertThat(mvc.get().uri("/api/v1/me/cars")).hasStatus(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
     void infersTheGenerationFromTheYear() {
         assertThat(create(CarJson.car("peugeot", "peugeot-208", null, 2016)))
                 .hasStatus(HttpStatus.CREATED)
@@ -80,7 +137,7 @@ class CarApiIntegrationTest {
         assertThat(changeStatus(id, "RESERVED")).hasStatusOk();
         assertThat(changeStatus(id, "SOLD")).hasStatusOk().bodyJson().extractingPath("$.version").isEqualTo(2);
         assertThat(changeStatus(id, "AVAILABLE")).hasStatus(HttpStatus.CONFLICT);
-        assertThat(mvc.put().uri("/api/v1/cars/" + id).contentType(MediaType.APPLICATION_JSON).content(CarJson.VALID))
+        assertThat(mvc.put().uri("/api/v1/cars/" + id).with(loggedInAs(SELLER_1)).contentType(MediaType.APPLICATION_JSON).content(CarJson.VALID))
                 .hasStatus(HttpStatus.CONFLICT)
                 .bodyJson().extractingPath("$.detail").isEqualTo("Car " + id + " is sold and can no longer be edited");
     }
@@ -108,11 +165,20 @@ class CarApiIntegrationTest {
     }
 
     private MvcTestResult create(String json) {
-        return mvc.post().uri("/api/v1/cars").contentType(MediaType.APPLICATION_JSON).content(json).exchange();
+        return create(json, SELLER_1);
+    }
+
+    private MvcTestResult create(String json, CurrentUser user) {
+        return mvc.post().uri("/api/v1/cars").with(loggedInAs(user))
+                .contentType(MediaType.APPLICATION_JSON).content(json).exchange();
     }
 
     private MvcTestResult changeStatus(String id, String status) {
-        return mvc.patch().uri("/api/v1/cars/" + id + "/status")
+        return changeStatus(id, status, SELLER_1);
+    }
+
+    private MvcTestResult changeStatus(String id, String status, CurrentUser user) {
+        return mvc.patch().uri("/api/v1/cars/" + id + "/status").with(loggedInAs(user))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\": \"%s\"}".formatted(status))
                 .exchange();

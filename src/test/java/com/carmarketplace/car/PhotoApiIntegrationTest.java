@@ -3,6 +3,7 @@ package com.carmarketplace.car;
 import com.carmarketplace.TestcontainersConfiguration;
 import com.carmarketplace.car.api.CarJson;
 import com.carmarketplace.car.application.TestImages;
+import com.carmarketplace.common.domain.CurrentUser;
 import com.carmarketplace.config.StorageProperties;
 import com.jayway.jsonpath.JsonPath;
 import org.bson.Document;
@@ -30,6 +31,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.carmarketplace.TestUsers.SELLER_1;
+import static com.carmarketplace.TestUsers.SELLER_2;
+import static com.carmarketplace.TestUsers.loggedInAs;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -56,7 +60,7 @@ class PhotoApiIntegrationTest {
     @BeforeEach
     void setUp() {
         mongoTemplate.getCollection("cars").deleteMany(new Document());
-        MvcTestResult created = mvc.post().uri("/api/v1/cars")
+        MvcTestResult created = mvc.post().uri("/api/v1/cars").with(loggedInAs(SELLER_1))
                 .contentType(MediaType.APPLICATION_JSON).content(CarJson.VALID).exchange();
         String location = created.getResponse().getHeader("Location");
         carId = location.substring(location.lastIndexOf('/') + 1);
@@ -114,7 +118,7 @@ class PhotoApiIntegrationTest {
         List<String> ids = JsonPath.read(body(upload(
                 photo("a.jpg", TestImages.jpeg(200, 150)), photo("b.jpg", TestImages.jpeg(200, 150)))), "$.photos[*].id");
 
-        assertThat(mvc.put().uri("/api/v1/cars/" + carId + "/photos/order").contentType(MediaType.APPLICATION_JSON)
+        assertThat(mvc.put().uri("/api/v1/cars/" + carId + "/photos/order").with(loggedInAs(SELLER_1)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"photoIds\": [\"%s\", \"%s\"]}".formatted(ids.get(1), ids.get(0))))
                 .hasStatusOk()
                 .bodyJson().extractingPath("$.photos[0].id").isEqualTo(ids.get(1));
@@ -125,27 +129,33 @@ class PhotoApiIntegrationTest {
         List<String> ids = JsonPath.read(body(upload(
                 photo("a.jpg", TestImages.jpeg(200, 150)), photo("b.jpg", TestImages.jpeg(200, 150)))), "$.photos[*].id");
 
-        assertThat(mvc.delete().uri("/api/v1/cars/" + carId + "/photos/" + ids.get(0))).hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(mvc.delete().uri("/api/v1/cars/" + carId + "/photos/" + ids.get(0)).with(loggedInAs(SELLER_1))).hasStatus(HttpStatus.NO_CONTENT);
 
         assertThat(storedFiles()).hasSize(3).noneMatch(key -> key.contains(ids.get(0)));
-        assertThat(mvc.delete().uri("/api/v1/cars/" + carId + "/photos/" + ids.get(0))).hasStatus(HttpStatus.NOT_FOUND);
+        assertThat(mvc.delete().uri("/api/v1/cars/" + carId + "/photos/" + ids.get(0)).with(loggedInAs(SELLER_1))).hasStatus(HttpStatus.NOT_FOUND);
     }
 
     @Test
     void deletingACarRemovesAllItsPhotoFiles() {
         upload(photo("a.jpg", TestImages.jpeg(200, 150)), photo("b.jpg", TestImages.jpeg(200, 150)));
 
-        assertThat(mvc.delete().uri("/api/v1/cars/" + carId)).hasStatus(HttpStatus.NO_CONTENT);
+        assertThat(mvc.delete().uri("/api/v1/cars/" + carId).with(loggedInAs(SELLER_1))).hasStatus(HttpStatus.NO_CONTENT);
 
         assertThat(storedFiles()).isEmpty();
     }
 
     @Test
     void soldCarPhotosCannotChange() {
-        mvc.patch().uri("/api/v1/cars/" + carId + "/status")
+        mvc.patch().uri("/api/v1/cars/" + carId + "/status").with(loggedInAs(SELLER_1))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"status\": \"SOLD\"}").exchange();
 
         assertThat(upload(photo("late.jpg", TestImages.jpeg(200, 150)))).hasStatus(HttpStatus.CONFLICT);
+        assertThat(storedFiles()).isEmpty();
+    }
+
+    @Test
+    void anotherUserCannotAddPhotosToTheListing() {
+        assertThat(upload(SELLER_2, photo("not-mine.jpg", TestImages.jpeg(200, 150)))).hasStatus(HttpStatus.FORBIDDEN);
         assertThat(storedFiles()).isEmpty();
     }
 
@@ -165,7 +175,11 @@ class PhotoApiIntegrationTest {
     }
 
     private MvcTestResult upload(MockMultipartFile... files) {
-        var request = mvc.post().uri("/api/v1/cars/" + carId + "/photos").multipart();
+        return upload(SELLER_1, files);
+    }
+
+    private MvcTestResult upload(CurrentUser user, MockMultipartFile... files) {
+        var request = mvc.post().uri("/api/v1/cars/" + carId + "/photos").with(loggedInAs(user)).multipart();
         for (MockMultipartFile file : files) {
             request = request.file(file);
         }
