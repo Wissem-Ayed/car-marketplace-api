@@ -3,8 +3,7 @@ package com.carmarketplace.catalog.application;
 import com.carmarketplace.catalog.domain.Brand;
 import com.carmarketplace.catalog.domain.CarModel;
 import com.carmarketplace.catalog.domain.Generation;
-import com.carmarketplace.catalog.infrastructure.BrandRepository;
-import com.carmarketplace.catalog.infrastructure.CarModelRepository;
+import com.carmarketplace.catalog.infrastructure.CatalogCache;
 import com.carmarketplace.common.domain.BusinessRuleViolationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,10 +27,7 @@ class CatalogServiceTest {
     private static final CarModel CLA = new CarModel("mercedes-benz-cla", "mercedes-benz", "CLA", List.of(C117, C118));
 
     @Mock
-    private BrandRepository brandRepository;
-
-    @Mock
-    private CarModelRepository carModelRepository;
+    private CatalogCache catalog;
 
     @InjectMocks
     private CatalogService catalogService;
@@ -93,8 +89,8 @@ class CatalogServiceTest {
     @Test
     void rejectsAModelOfAnotherBrand() {
         CarModel golf = new CarModel("volkswagen-golf", "volkswagen", "Golf", List.of());
-        given(brandRepository.findById("mercedes-benz")).willReturn(Optional.of(MERCEDES));
-        given(carModelRepository.findById("volkswagen-golf")).willReturn(Optional.of(golf));
+        given(catalog.brand("mercedes-benz")).willReturn(Optional.of(MERCEDES));
+        given(catalog.model("volkswagen-golf")).willReturn(Optional.of(golf));
 
         assertThatThrownBy(() -> catalogService.select("mercedes-benz", "volkswagen-golf", null, 2022))
                 .isInstanceOf(BusinessRuleViolationException.class)
@@ -103,7 +99,7 @@ class CatalogServiceTest {
 
     @Test
     void rejectsAnUnknownBrand() {
-        given(brandRepository.findById("tesla-motors")).willReturn(Optional.empty());
+        given(catalog.brand("tesla-motors")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> catalogService.select("tesla-motors", "tesla-model-3", null, 2022))
                 .isInstanceOf(BusinessRuleViolationException.class)
@@ -111,7 +107,7 @@ class CatalogServiceTest {
     }
 
     private void givenCatalogContainsMercedesCla() {
-        given(brandRepository.findById("mercedes-benz")).willReturn(Optional.of(MERCEDES));
-        given(carModelRepository.findById("mercedes-benz-cla")).willReturn(Optional.of(CLA));
+        given(catalog.brand("mercedes-benz")).willReturn(Optional.of(MERCEDES));
+        given(catalog.model("mercedes-benz-cla")).willReturn(Optional.of(CLA));
     }
 }

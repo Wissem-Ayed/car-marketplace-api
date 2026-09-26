@@ -7,8 +7,10 @@ import com.carmarketplace.car.domain.CarSearchCriteria;
 import com.carmarketplace.car.domain.CarStatus;
 import com.carmarketplace.car.domain.Equipment;
 import com.carmarketplace.car.domain.FuelType;
+import com.carmarketplace.car.domain.Governorate;
 import com.carmarketplace.car.domain.Transmission;
 import com.carmarketplace.config.MongoConfig;
+import com.carmarketplace.config.SearchConfig;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataMongoTest
-@Import({TestcontainersConfiguration.class, MongoConfig.class})
+@Import({TestcontainersConfiguration.class, MongoConfig.class, SearchConfig.class})
 class CarRepositoryTest {
 
     private static final Pageable FIRST_PAGE = PageRequest.of(0, 20);
@@ -61,10 +63,10 @@ class CarRepositoryTest {
                     aCar().brand("bmw", "BMW").model("bmw-x3", "X3").year(2021).price("95000")
                             .mileageKm(40_000).fuelType(FuelType.PETROL)
                             .equipment(Equipment.ABS, Equipment.ESP, Equipment.CAMERA_360).build(),
-                    aCar().brand("peugeot", "Peugeot").model("peugeot-208", "208").year(2022).price("52000")
+                    aCar().governorate(Governorate.SFAX).brand("peugeot", "Peugeot").model("peugeot-208", "208").year(2022).price("52000")
                             .mileageKm(20_000).fuelType(FuelType.PETROL).transmission(Transmission.MANUAL)
                             .equipment(Equipment.ABS, Equipment.APPLE_CARPLAY_ANDROID_AUTO).build(),
-                    aCar().seller(TestUsers.SELLER_2).brand("kia", "Kia").model("kia-picanto", "Picanto").year(2019).price("30000")
+                    aCar().seller(TestUsers.SELLER_2).governorate(Governorate.ARIANA).brand("kia", "Kia").model("kia-picanto", "Picanto").year(2019).price("30000")
                             .mileageKm(60_000).fuelType(FuelType.PETROL).transmission(Transmission.MANUAL).build(),
                     aCar().brand("mg", "MG").model("mg-mg4", "MG4").year(2023).price("110000")
                             .mileageKm(10_000).fuelType(FuelType.ELECTRIC).status(CarStatus.SOLD)
@@ -99,6 +101,13 @@ class CarRepositoryTest {
             assertThat(models(new SearchBuilder().fuelType(FuelType.PETROL).transmission(Transmission.MANUAL)))
                     .containsExactlyInAnyOrder("208", "Picanto");
             assertThat(models(new SearchBuilder().status(CarStatus.SOLD))).containsExactly("MG4");
+        }
+
+        @Test
+        void filtersByOneOrSeveralGovernorates() {
+            assertThat(models(new SearchBuilder().governorates(Governorate.SFAX))).containsExactly("208");
+            assertThat(models(new SearchBuilder().governorates(Governorate.SFAX, Governorate.ARIANA)))
+                    .containsExactlyInAnyOrder("208", "Picanto");
         }
 
         @Test
@@ -174,7 +183,8 @@ class CarRepositoryTest {
 
             assertThat(mongoTemplate.indexOps(Car.class).getIndexInfo())
                     .extracting(IndexInfo::getName)
-                    .contains("brand_model", "price", "year", "equipment");
+                    .contains("status_newest", "status_brand_model_newest", "status_governorate_newest", "status_price",
+                            "status_year", "status_mileage", "seller_newest", "equipment");
         }
     }
 
@@ -191,6 +201,12 @@ class CarRepositoryTest {
         private CarStatus status;
         private List<Equipment> equipment;
         private String sellerId;
+        private List<Governorate> governorates;
+
+        SearchBuilder governorates(Governorate... governorates) {
+            this.governorates = List.of(governorates);
+            return this;
+        }
 
         SearchBuilder sellerId(String sellerId) {
             this.sellerId = sellerId;
@@ -249,7 +265,7 @@ class CarRepositoryTest {
 
         CarSearchCriteria build() {
             return new CarSearchCriteria(brandId, modelId, null, minPrice, maxPrice, minYear, null, maxMileageKm,
-                    fuelType, transmission, null, null, status, equipment, sellerId);
+                    fuelType, transmission, null, null, status, equipment, sellerId, governorates);
         }
     }
 }

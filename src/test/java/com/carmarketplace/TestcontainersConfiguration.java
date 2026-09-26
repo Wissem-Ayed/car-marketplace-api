@@ -40,6 +40,7 @@ public class TestcontainersConfiguration {
 					seaweedFsContainer.getHost(), seaweedFsContainer.getMappedPort(S3_PORT));
 			registry.add("app.storage.endpoint", () -> endpoint);
 			registry.add("app.storage.public-url", () -> endpoint + "/car-photos");
+			registry.add("app.rate-limit.enabled", () -> "false");
 		};
 	}
 }

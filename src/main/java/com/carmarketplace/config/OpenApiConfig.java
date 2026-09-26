@@ -13,6 +13,7 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.OAuthFlow;
 import io.swagger.v3.oas.models.security.OAuthFlows;
 import io.swagger.v3.oas.models.security.Scopes;
@@ -81,13 +82,16 @@ public class OpenApiConfig {
         return openApi -> {
             openApi.getComponents().addSchemas(PROBLEM_SCHEMA, problemSchema());
             Schema<?> problemRef = new Schema<>().$ref("#/components/schemas/" + PROBLEM_SCHEMA);
-            openApi.getPaths().values().forEach(path -> path.readOperations().forEach(operation ->
-                    operation.getResponses().forEach((code, response) -> {
-                        if (code.startsWith("4")) {
-                            response.setContent(new Content()
-                                    .addMediaType(PROBLEM_MEDIA_TYPE, new MediaType().schema(problemRef)));
-                        }
-                    })));
+            openApi.getPaths().values().forEach(path -> path.readOperations().forEach(operation -> {
+                operation.getResponses().addApiResponse("429", new ApiResponse()
+                        .description("Rate limit exceeded; retry after the number of seconds in `Retry-After`"));
+                operation.getResponses().forEach((code, response) -> {
+                    if (code.startsWith("4") || code.equals("503")) {
+                        response.setContent(new Content()
+                                .addMediaType(PROBLEM_MEDIA_TYPE, new MediaType().schema(problemRef)));
+                    }
+                });
+            }));
         };
     }
 

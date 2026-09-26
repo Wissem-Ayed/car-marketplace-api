@@ -23,6 +23,7 @@ public final class CarJson {
                     "origin": "IMPORTED", "registeredInTunisia": false, "previousOwners": 1
                   },
                   "price": { "amount": 185000.000, "negotiable": true },
+                  "location": { "governorate": "SFAX", "city": "Sakiet Ezzit" },
                   "equipment": ["PANORAMIC_ROOF", "ABS", "ESP", "APPLE_CARPLAY_ANDROID_AUTO"],
                   "description": "Burmester sound system, Alcantara interior"
                 }

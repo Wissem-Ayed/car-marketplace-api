@@ -18,10 +18,11 @@ public record CarSearchCriteria(
         Condition condition,
         CarStatus status,
         List<Equipment> equipment,
-        String sellerId) {
+        String sellerId,
+        List<Governorate> governorates) {
 
     public static CarSearchCriteria bySeller(String sellerId) {
         return new CarSearchCriteria(null, null, null, null, null, null, null, null, null, null, null, null, null,
-                null, sellerId);
+                null, sellerId, null);
     }
 }

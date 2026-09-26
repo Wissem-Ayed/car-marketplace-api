@@ -5,6 +5,7 @@ import com.carmarketplace.car.domain.Color;
 import com.carmarketplace.car.domain.Engine;
 import com.carmarketplace.car.domain.Equipment;
 import com.carmarketplace.car.domain.History;
+import com.carmarketplace.car.domain.Location;
 import com.carmarketplace.car.domain.Price;
 
 import java.util.Set;
@@ -14,6 +15,7 @@ public record CarDraft(
         Engine engine,
         History history,
         Price price,
+        Location location,
         Set<Equipment> equipment,
         String description) {
 

@@ -157,6 +157,72 @@ class CarApiIntegrationTest {
     }
 
     @Test
+    void storesTheLocationAndFiltersByGovernorate() {
+        create(CarJson.VALID);
+        create(CarJson.car("peugeot", "peugeot-208", "p21", 2021).replace("\"SFAX\"", "\"TUNIS\""));
+
+        assertThat(mvc.get().uri("/api/v1/cars?governorate=SFAX"))
+                .hasStatusOk()
+                .bodyJson()
+                .satisfies(json -> {
+                    assertThat(json).extractingPath("$.page.totalElements").isEqualTo(1);
+                    assertThat(json).extractingPath("$.content[0].location.governorate").isEqualTo("SFAX");
+                    assertThat(json).extractingPath("$.content[0].location.city").isEqualTo("Sakiet Ezzit");
+                });
+        assertThat(mvc.get().uri("/api/v1/cars?governorate=SFAX,TUNIS"))
+                .bodyJson().extractingPath("$.page.totalElements").isEqualTo(2);
+    }
+
+    @Test
+    void rejectsAListingWithoutGovernorate() {
+        String withoutLocation = CarJson.VALID.replace(
+                "\"location\": { \"governorate\": \"SFAX\", \"city\": \"Sakiet Ezzit\" },", "");
+
+        assertThat(create(withoutLocation))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .bodyJson().extractingPath("$.errors[*].field").asArray().containsExactly("location");
+    }
+
+    @Test
+    void searchHidesSoldListingsUnlessAsked() {
+        String sold = idOf(create(CarJson.VALID));
+        changeStatus(sold, "SOLD");
+        create(CarJson.car("peugeot", "peugeot-208", "p21", 2021));
+
+        assertThat(mvc.get().uri("/api/v1/cars")).bodyJson().extractingPath("$.page.totalElements").isEqualTo(1);
+        assertThat(mvc.get().uri("/api/v1/cars?status=SOLD")).bodyJson().extractingPath("$.content[0].id").isEqualTo(sold);
+    }
+
+    @Test
+    void preventsLostUpdatesWithIfMatch() {
+        String id = idOf(create(CarJson.VALID));
+        String eTag = mvc.get().uri("/api/v1/cars/" + id).exchange().getResponse().getHeader("ETag");
+        assertThat(eTag).isEqualTo("\"0\"");
+
+        assertThat(mvc.patch().uri("/api/v1/cars/" + id + "/status").with(loggedInAs(SELLER_1)).header("If-Match", eTag)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"status\": \"RESERVED\"}"))
+                .hasStatusOk()
+                .hasHeader("ETag", "\"1\"");
+        assertThat(mvc.put().uri("/api/v1/cars/" + id).with(loggedInAs(SELLER_1)).header("If-Match", eTag)
+                .contentType(MediaType.APPLICATION_JSON).content(CarJson.VALID))
+                .hasStatus(HttpStatus.PRECONDITION_FAILED)
+                .bodyJson().extractingPath("$.detail")
+                .isEqualTo("Car " + id + " has changed since version 0 (it is now at version 1); reload it and try again");
+        assertThat(mvc.get().uri("/api/v1/cars/" + id)).bodyJson().extractingPath("$.status").isEqualTo("RESERVED");
+    }
+
+    @Test
+    void listsTheTwentyFourGovernorates() {
+        assertThat(mvc.get().uri("/api/v1/governorates"))
+                .hasStatusOk()
+                .bodyJson()
+                .satisfies(json -> {
+                    assertThat(json).extractingPath("$.length()").isEqualTo(24);
+                    assertThat(json).extractingPath("$[?(@.code == 'KEF')].name").asArray().containsExactly("Le Kef");
+                });
+    }
+
+    @Test
     void listsEquipmentGroupedByCategory() {
         assertThat(mvc.get().uri("/api/v1/equipment"))
                 .hasStatusOk()

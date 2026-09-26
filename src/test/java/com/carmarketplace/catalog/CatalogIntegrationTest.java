@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import java.util.List;
 
@@ -55,6 +56,16 @@ class CatalogIntegrationTest {
                 .bodyJson()
                 .extractingPath("$[?(@.id == 'mercedes-benz-cla')].generations[1].name")
                 .asArray().containsExactly("C118, X118");
+    }
+
+    @Test
+    void referenceDataIsCacheableWithAnETag() {
+        MvcTestResult first = mvc.get().uri("/api/v1/brands").exchange();
+        String eTag = first.getResponse().getHeader("ETag");
+
+        assertThat(first).hasStatusOk().hasHeader("Cache-Control", "max-age=3600, public");
+        assertThat(eTag).isNotBlank();
+        assertThat(mvc.get().uri("/api/v1/brands").header("If-None-Match", eTag)).hasStatus(HttpStatus.NOT_MODIFIED);
     }
 
     @Test

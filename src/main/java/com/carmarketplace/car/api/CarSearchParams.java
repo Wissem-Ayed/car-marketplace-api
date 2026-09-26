@@ -6,6 +6,7 @@ import com.carmarketplace.car.domain.CarStatus;
 import com.carmarketplace.car.domain.Condition;
 import com.carmarketplace.car.domain.Equipment;
 import com.carmarketplace.car.domain.FuelType;
+import com.carmarketplace.car.domain.Governorate;
 import com.carmarketplace.car.domain.Transmission;
 import io.swagger.v3.oas.annotations.Parameter;
 
@@ -49,7 +50,7 @@ public record CarSearchParams(
         @Parameter(description = "Overall condition")
         Condition condition,
 
-        @Parameter(description = "Listing status")
+        @Parameter(description = "Listing status; defaults to AVAILABLE so sold cars stay out of search results")
         CarStatus status,
 
         @Parameter(description = "Equipment the car must have; every code is required. "
@@ -57,10 +58,15 @@ public record CarSearchParams(
         List<Equipment> equipment,
 
         @Parameter(description = "Id of the seller, to list one seller's cars", example = "5f0c1a2e-0000-4000-8000-000000000001")
-        String sellerId) {
+        String sellerId,
+
+        @Parameter(description = "Governorates the car must be in; repeat the parameter or separate codes with commas. "
+                + "Codes: `GET /api/v1/governorates`", example = "TUNIS,ARIANA,BEN_AROUS,MANOUBA")
+        List<Governorate> governorate) {
 
     public CarSearchCriteria toCriteria() {
         return new CarSearchCriteria(brandId, modelId, generationId, minPrice, maxPrice, minYear, maxYear,
-                maxMileageKm, fuelType, transmission, bodyType, condition, status, equipment, sellerId);
+                maxMileageKm, fuelType, transmission, bodyType, condition, status != null ? status : CarStatus.AVAILABLE,
+                equipment, sellerId, governorate);
     }
 }

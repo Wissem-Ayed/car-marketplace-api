@@ -21,7 +21,7 @@ class CarTest {
         Car template = aCar().build();
 
         Car car = Car.create(template.seller(), template.vehicle(), template.engine(), template.history(), template.price(),
-                template.equipment(), template.description());
+                template.location(), template.equipment(), template.description());
 
         assertThat(car.status()).isEqualTo(CarStatus.AVAILABLE);
         assertThat(car.id()).isNull();
@@ -86,12 +86,12 @@ class CarTest {
         void replacesTheDetailsAndKeepsIdentityStatusAndAuditData() {
             Instant createdAt = Instant.parse("2026-01-01T10:00:00Z");
             Car car = new Car("abc", aCar().build().seller(), aCar().build().vehicle(), aCar().build().engine(), aCar().build().history(),
-                    aCar().build().price(), aCar().build().equipment(), "old", List.of(), CarStatus.RESERVED, 3L, createdAt,
+                    aCar().build().price(), aCar().build().location(), aCar().build().equipment(), "old", List.of(), CarStatus.RESERVED, 3L, createdAt,
                     createdAt);
             Car newDetails = aCar().mileageKm(30_000).price("170000").build();
 
             Car updated = car.update(newDetails.vehicle(), newDetails.engine(), newDetails.history(),
-                    newDetails.price(), newDetails.equipment(), "new");
+                    newDetails.price(), newDetails.location(), newDetails.equipment(), "new");
 
             assertThat(updated.history().mileageKm()).isEqualTo(30_000);
             assertThat(updated.description()).isEqualTo("new");
@@ -106,7 +106,7 @@ class CarTest {
             Car car = aCar().id("abc").status(CarStatus.SOLD).build();
 
             assertThatThrownBy(() -> car.update(car.vehicle(), car.engine(), car.history(), car.price(),
-                    car.equipment(), car.description()))
+                    car.location(), car.equipment(), car.description()))
                     .isInstanceOf(IllegalCarStateException.class)
                     .hasMessage("Car abc is sold and can no longer be edited");
         }

@@ -2,6 +2,7 @@ package com.carmarketplace.car.infrastructure;
 
 import com.carmarketplace.car.domain.Car;
 import com.carmarketplace.car.domain.CarSearchCriteria;
+import com.carmarketplace.config.SearchProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,12 +18,14 @@ import java.util.List;
 class CarSearchRepositoryImpl implements CarSearchRepository {
 
     private final MongoTemplate mongoTemplate;
+    private final SearchProperties searchProperties;
 
     @Override
     public Page<Car> search(CarSearchCriteria criteria, Pageable pageable) {
         Query query = new Query(toCriteria(criteria));
         List<Car> cars = mongoTemplate.find(Query.of(query).with(pageable), Car.class);
-        return PageableExecutionUtils.getPage(cars, pageable, () -> mongoTemplate.count(query, Car.class));
+        Query boundedCount = Query.of(query).limit((int) searchProperties.maxCountedResults());
+        return PageableExecutionUtils.getPage(cars, pageable, () -> mongoTemplate.count(boundedCount, Car.class));
     }
 
     private static Criteria toCriteria(CarSearchCriteria criteria) {
@@ -40,6 +43,9 @@ class CarSearchRepositoryImpl implements CarSearchRepository {
         addRange(filters, "price.amount", criteria.minPrice(), criteria.maxPrice());
         addRange(filters, "vehicle.year", criteria.minYear(), criteria.maxYear());
         addRange(filters, "history.mileageKm", null, criteria.maxMileageKm());
+        if (criteria.governorates() != null && !criteria.governorates().isEmpty()) {
+            filters.add(Criteria.where("location.governorate").in(criteria.governorates()));
+        }
         if (criteria.equipment() != null && !criteria.equipment().isEmpty()) {
             filters.add(Criteria.where("equipment").all(criteria.equipment()));
         }

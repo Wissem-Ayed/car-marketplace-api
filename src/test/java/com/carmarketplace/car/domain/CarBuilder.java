@@ -12,6 +12,7 @@ import java.util.Set;
 public final class CarBuilder {
 
     private String id;
+    private Long version;
     private Seller seller = Seller.of(TestUsers.SELLER_1);
     private CatalogRef brand = new CatalogRef("mercedes-benz", "Mercedes-Benz");
     private CatalogRef model = new CatalogRef("mercedes-benz-cla", "CLA");
@@ -24,6 +25,7 @@ public final class CarBuilder {
     private Set<Equipment> equipment = Set.of(Equipment.ABS, Equipment.ESP);
     private CarStatus status = CarStatus.AVAILABLE;
     private List<Photo> photos = List.of();
+    private Governorate governorate = Governorate.TUNIS;
 
     private CarBuilder() {
     }
@@ -34,6 +36,11 @@ public final class CarBuilder {
 
     public CarBuilder seller(CurrentUser user) {
         this.seller = Seller.of(user);
+        return this;
+    }
+
+    public CarBuilder version(long version) {
+        this.version = version;
         return this;
     }
 
@@ -89,6 +96,11 @@ public final class CarBuilder {
         return this;
     }
 
+    public CarBuilder governorate(Governorate governorate) {
+        this.governorate = governorate;
+        return this;
+    }
+
     public CarBuilder status(CarStatus status) {
         this.status = status;
         return this;
@@ -103,11 +115,12 @@ public final class CarBuilder {
                 new Engine(fuelType, transmission, 150, 8, electric ? null : 4, electric ? null : 1500),
                 new History(mileageKm, true, Condition.VERY_GOOD, Origin.LOCAL, true, 1),
                 Price.tnd(price, true),
+                new Location(governorate, "Test city"),
                 equipment,
                 "Test description",
                 photos,
                 status,
-                null,
+                version,
                 null,
                 null);
     }

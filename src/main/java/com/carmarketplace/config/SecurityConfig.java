@@ -1,7 +1,9 @@
 package com.carmarketplace.config;
 
 import com.carmarketplace.common.api.ProblemDetailsSecurityHandler;
+import com.carmarketplace.common.api.RateLimitFilter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,10 +14,12 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -23,17 +27,21 @@ import java.util.List;
 import java.util.Map;
 
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(RateLimitProperties.class)
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain apiSecurity(HttpSecurity http, ProblemDetailsSecurityHandler problemDetails) throws Exception {
+    SecurityFilterChain apiSecurity(HttpSecurity http, ProblemDetailsSecurityHandler problemDetails,
+                                    RateLimitProperties rateLimits, JsonMapper jsonMapper) throws Exception {
         http
+                .addFilterAfter(new RateLimitFilter(rateLimits, jsonMapper), BearerTokenAuthenticationFilter.class)
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.GET,
-                                "/api/v1/cars", "/api/v1/cars/*", "/api/v1/brands/**", "/api/v1/equipment").permitAll()
+                                "/api/v1/cars", "/api/v1/cars/*", "/api/v1/brands/**", "/api/v1/equipment",
+                                "/api/v1/governorates").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
                                 "/actuator/health/**", "/error").permitAll()
                         .anyRequest().authenticated())

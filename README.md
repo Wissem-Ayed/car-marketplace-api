@@ -21,11 +21,13 @@ publish a car that doesn't exist.
   (including the GPS location phones embed), resized to three sizes and served straight from S3-compatible storage.
 - **Listing lifecycle** – `AVAILABLE ⇄ RESERVED → SOLD`, with sold listings locked against edits.
 - **Optimistic locking** – concurrent edits are detected with `@Version` instead of silently overwriting each other.
-- **Indexed search** – filters on catalog ids, price, year, mileage, fuel, transmission, equipment…, paginated and
+- **Indexed search** – filters on catalog ids, price, year, mileage, fuel, transmission, equipment, governorate…, paginated and
   sortable, backed by MongoDB indexes.
+- **Measured performance** – ESR compound indexes, bounded counts, gzip, HTTP caching with ETags, virtual threads and
+  rate limiting, validated with a load test on 100,000 listings (see [Performance](#performance)).
 - **Consistent errors** – every error follows [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) Problem Details,
   including the list of invalid fields on validation errors.
-- **Tested at every level** – 115 tests: domain unit tests, controller slice tests, repository tests and end-to-end
+- **Tested at every level** – 135 tests: domain unit tests, controller slice tests, repository tests and end-to-end
   tests against real MongoDB, SeaweedFS and Keycloak containers started by Testcontainers.
 
 ## Tech stack
@@ -115,6 +117,7 @@ A listing is a single MongoDB document built from value objects:
     "previousOwners": 1
   },
   "price": { "amount": 185000.000, "currency": "TND", "negotiable": true },
+  "location": { "governorate": "SFAX", "city": "Sakiet Ezzit" },
   "equipment": ["ABS", "ESP", "APPLE_CARPLAY_ANDROID_AUTO", "PANORAMIC_ROOF"],
   "description": "Burmester sound system, Alcantara interior",
   "status": "AVAILABLE",
@@ -271,6 +274,7 @@ Browsing (`GET` on listings and reference data) is public. Every other endpoint 
 | GET    | `/brands`                     | All brands, sorted by name                  |
 | GET    | `/brands/{brandId}/models`    | Models of a brand, with their generations   |
 | GET    | `/equipment`                  | Equipment codes grouped by category         |
+| GET    | `/governorates`               | The 24 governorates with their display names |
 
 ### Cars
 
@@ -339,6 +343,7 @@ curl -X POST http://localhost:8050/api/v1/cars \
     "history": { "mileageKm": 45000, "mileageCertified": true, "condition": "VERY_GOOD",
                  "origin": "LOCAL", "registeredInTunisia": true, "previousOwners": 1 },
     "price":   { "amount": 62000, "negotiable": true },
+    "location": { "governorate": "TUNIS", "city": "La Marsa" },
     "equipment": ["ABS", "ESP", "APPLE_CARPLAY_ANDROID_AUTO", "REAR_PARKING_SENSORS"],
     "description": "First hand, full service history."
   }'
@@ -354,6 +359,7 @@ curl -X POST http://localhost:8050/api/v1/cars \
 | `maxMileageKm`              | `maxMileageKm=100000`             |
 | `fuelType`, `transmission`, `bodyType`, `condition`, `status` | `fuelType=DIESEL` |
 | `equipment` (all required)  | `equipment=ABS,REAR_CAMERA`       |
+| `governorate` (any of)      | `governorate=TUNIS,ARIANA,BEN_AROUS,MANOUBA` (Greater Tunis) |
 | `sellerId`                  | `sellerId=5f0c1a2e-0000-4000-8000-000000000001` |
 | `page`, `size` (max 100), `sort` | `sort=price.amount,asc`      |
 
@@ -361,14 +367,33 @@ curl -X POST http://localhost:8050/api/v1/cars \
 curl "http://localhost:8050/api/v1/cars?brandId=peugeot&maxPrice=80000&equipment=ABS&sort=price.amount,asc&size=10"
 ```
 
-Results are paginated, newest first by default:
+Only `AVAILABLE` listings are returned unless `status` is given. Results are paginated, newest first by default.
+Sortable fields are `id`, `price.amount`, `vehicle.year` and `history.mileageKm` (all backed by indexes; other fields
+return `400`). The first 100 pages are served, and `totalElements` is counted up to 10,000:
 
 ```json
 {
   "content": [ { "id": "...", "vehicle": { ... }, "price": { ... } } ],
-  "page": { "size": 10, "number": 0, "totalElements": 12, "totalPages": 2 }
+  "page": { "size": 10, "number": 0, "totalElements": 12, "totalPages": 2, "totalElementsExact": true }
 }
 ```
+
+### Conditional requests
+
+Every listing response carries an `ETag` (its version). Send it back to avoid wasted transfers and lost updates:
+
+| Header          | On                           | Effect                                                       |
+|-----------------|------------------------------|--------------------------------------------------------------|
+| `If-None-Match` | `GET /cars/{id}`             | `304 Not Modified` when the listing hasn't changed           |
+| `If-Match`      | `PUT`, `PATCH`, `DELETE`     | `412 Precondition Failed` if someone changed it in the meantime |
+
+Reference data (`/brands`, `/equipment`, `/governorates`) is cacheable for an hour (`Cache-Control: public`) and
+supports `If-None-Match` too.
+
+### Rate limits
+
+Each user (or IP address when anonymous) can send 300 requests and 60 changes per minute. Every response carries
+`RateLimit-Limit` and `RateLimit-Remaining`; beyond the limit the API answers `429` with `Retry-After`.
 
 ### Errors
 
@@ -391,8 +416,43 @@ All errors use the Problem Details format:
 | 403    | Logged in, but not the seller of the listing nor an administrator          |
 | 404    | Unknown car or brand                                                       |
 | 409    | Illegal status change, sold car edited, or concurrent modification        |
+| 412    | `If-Match` doesn't match the current version of the listing                |
 | 413    | Uploaded file larger than 10 MB                                            |
+| 429    | Rate limit exceeded; retry after `Retry-After` seconds                     |
 | 422    | Business rule violated (catalog mismatch, inconsistent engine, invalid photo, …) |
+| 500    | Unexpected error; logged server-side, no internals in the response        |
+| 503    | Too many photos being processed at once; retry after `Retry-After` seconds |
+
+## Performance
+
+Load test: 100,000 listings, 1,500 requests per endpoint with 32 concurrent clients, API and databases on one laptop
+(warm JVM). Absolute numbers depend on the machine; the before/after ratios are what matter.
+
+| Endpoint                          | Before (req/s) | After (req/s) | Gain   |
+|-----------------------------------|---------------:|--------------:|--------|
+| `GET /cars` (home page)           | 58             | 326           | ×5.6   |
+| `GET /cars?size=100`              | 47             | 180           | ×3.8   |
+| `GET /cars` with 4 filters        | 51             | 109           | ×2.1   |
+| `GET /cars?sort=history.mileageKm`| 15             | 290           | ×19    |
+| Deep page                         | 23 (page 2500) | 254 (page 99, the deepest served) | ×11 |
+| `GET /cars/{id}`                  | 1,149          | 1,372         | ×1.2   |
+| `GET /brands/{id}/models`         | 1,168          | 2,159         | ×1.8   |
+| Page of 20 cars on the wire       | 22.7 KB        | 3.0 KB (gzip) | −87%   |
+
+What made the difference:
+
+- **Bounded counts.** Every page used to count all matching documents; without filters that meant reading the whole
+  collection (34 ms per request at 100,000 listings). Counting stops at 10,000 (3.5 ms), and the response says whether
+  the total is exact.
+- **ESR compound indexes** (Equality, Sort, Range): `{status, _id}`, `{status, governorate, _id}`,
+  `{status, brand, model, _id}`, `{status, price}`, `{status, year}`, `{status, mileage}`, `{seller, _id}`. Every
+  public query filters on `status`, and no query sorts in memory any more.
+- **Only indexed sort fields and a page-depth limit**, so no request can force a collection scan or skip 50,000
+  documents.
+- **gzip compression** of JSON responses, **HTTP caching** and **ETags** on reference data, and an in-memory
+  **Caffeine cache** for catalog lookups (no database query to validate a brand or model).
+- **Virtual threads** for blocking I/O (MongoDB, S3, Keycloak), a **bounded pool for image decoding** (at most 4
+  photos decoded at once, `503` beyond) and **parallel uploads** of photo sizes to storage.
 
 ## Testing strategy
 
@@ -410,4 +470,4 @@ All errors use the Problem Details format:
 - Seller contact details and messaging between buyers and sellers
 - Direct-to-storage uploads with presigned URLs, for very high traffic
 - Location (governorate) filter
-- Keyset pagination for very deep result pages
+- Keyset (cursor) pagination for infinite scrolling

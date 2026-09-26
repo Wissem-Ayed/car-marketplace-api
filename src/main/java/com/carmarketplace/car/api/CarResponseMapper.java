@@ -21,6 +21,7 @@ public class CarResponseMapper {
                 car.engine(),
                 car.history(),
                 car.price(),
+                car.location(),
                 car.equipment(),
                 car.description(),
                 car.photos().stream().map(photo -> toResponse(car.id(), photo)).toList(),

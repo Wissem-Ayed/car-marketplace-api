@@ -10,6 +10,7 @@ import com.carmarketplace.car.infrastructure.CarRepository;
 import com.carmarketplace.catalog.application.CatalogSelection;
 import com.carmarketplace.catalog.application.CatalogService;
 import com.carmarketplace.common.domain.CurrentUser;
+import com.carmarketplace.common.domain.PreconditionFailedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +26,7 @@ public class CarService {
 
     public Car createCar(CarDraft draft, CurrentUser user) {
         Car car = Car.create(Seller.of(user), toVehicle(draft.vehicle()), draft.engine(), draft.history(), draft.price(),
-                draft.equipment(), draft.description());
+                draft.location(), draft.equipment(), draft.description());
         return carRepository.save(car);
     }
 
@@ -41,28 +42,33 @@ public class CarService {
         return carRepository.search(CarSearchCriteria.bySeller(user.id()), pageable);
     }
 
-    public Car updateCar(String id, CarDraft draft, CurrentUser user) {
-        Car car = getManageableCar(id, user);
+    public Car updateCar(String id, CarDraft draft, CurrentUser user, Long expectedVersion) {
+        Car car = getManageableCar(id, user, expectedVersion);
         Car updated = car.update(toVehicle(draft.vehicle()), draft.engine(), draft.history(), draft.price(),
-                draft.equipment(), draft.description());
+                draft.location(), draft.equipment(), draft.description());
         return carRepository.save(updated);
     }
 
-    public Car changeStatus(String id, CarStatus status, CurrentUser user) {
-        Car car = getManageableCar(id, user);
+    public Car changeStatus(String id, CarStatus status, CurrentUser user, Long expectedVersion) {
+        Car car = getManageableCar(id, user, expectedVersion);
         Car changed = car.changeStatus(status);
         return changed == car ? car : carRepository.save(changed);
     }
 
-    public void deleteCar(String id, CurrentUser user) {
-        Car car = getManageableCar(id, user);
+    public void deleteCar(String id, CurrentUser user, Long expectedVersion) {
+        Car car = getManageableCar(id, user, expectedVersion);
         carRepository.delete(car);
         photoService.deleteAllPhotos(car);
     }
 
-    private Car getManageableCar(String id, CurrentUser user) {
+    private Car getManageableCar(String id, CurrentUser user, Long expectedVersion) {
         Car car = getCar(id);
         car.ensureManageableBy(user);
+        if (expectedVersion != null && !expectedVersion.equals(car.version())) {
+            throw new PreconditionFailedException(
+                    "Car %s has changed since version %d (it is now at version %d); reload it and try again"
+                            .formatted(id, expectedVersion, car.version()));
+        }
         return car;
     }
 

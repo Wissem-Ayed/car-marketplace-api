@@ -4,6 +4,7 @@ import com.carmarketplace.car.domain.CarStatus;
 import com.carmarketplace.car.domain.Engine;
 import com.carmarketplace.car.domain.Equipment;
 import com.carmarketplace.car.domain.History;
+import com.carmarketplace.car.domain.Location;
 import com.carmarketplace.car.domain.Price;
 import com.carmarketplace.car.domain.Seller;
 import com.carmarketplace.car.domain.Vehicle;
@@ -22,6 +23,7 @@ public record CarResponse(
         Engine engine,
         History history,
         Price price,
+        Location location,
         Set<Equipment> equipment,
         String description,
         @Schema(description = "Photos in display order; the first one is the cover")

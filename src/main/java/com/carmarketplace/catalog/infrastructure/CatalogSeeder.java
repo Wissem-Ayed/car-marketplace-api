@@ -25,6 +25,7 @@ class CatalogSeeder implements ApplicationRunner {
     private final BrandRepository brandRepository;
     private final CarModelRepository carModelRepository;
     private final JsonMapper jsonMapper;
+    private final CatalogCache catalogCache;
 
     @Override
     public void run(ApplicationArguments args) throws IOException {
@@ -40,6 +41,7 @@ class CatalogSeeder implements ApplicationRunner {
 
         brandRepository.saveAll(brands);
         carModelRepository.saveAll(models);
+        catalogCache.evictAll();
         log.info("Catalog loaded: {} brands, {} models", brands.size(), models.size());
     }
 

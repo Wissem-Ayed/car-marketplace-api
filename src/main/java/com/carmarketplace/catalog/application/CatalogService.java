@@ -3,11 +3,9 @@ package com.carmarketplace.catalog.application;
 import com.carmarketplace.catalog.domain.Brand;
 import com.carmarketplace.catalog.domain.CarModel;
 import com.carmarketplace.catalog.domain.Generation;
-import com.carmarketplace.catalog.infrastructure.BrandRepository;
-import com.carmarketplace.catalog.infrastructure.CarModelRepository;
+import com.carmarketplace.catalog.infrastructure.CatalogCache;
 import com.carmarketplace.common.domain.BusinessRuleViolationException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,24 +14,23 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CatalogService {
 
-    private final BrandRepository brandRepository;
-    private final CarModelRepository carModelRepository;
+    private final CatalogCache catalog;
 
     public List<Brand> getBrands() {
-        return brandRepository.findAll(Sort.by("name"));
+        return catalog.allBrands();
     }
 
     public List<CarModel> getModels(String brandId) {
-        if (!brandRepository.existsById(brandId)) {
+        if (catalog.brand(brandId).isEmpty()) {
             throw new BrandNotFoundException(brandId);
         }
-        return carModelRepository.findByBrandIdOrderByNameAsc(brandId);
+        return catalog.modelsOf(brandId);
     }
 
     public CatalogSelection select(String brandId, String modelId, String generationId, int year) {
-        Brand brand = brandRepository.findById(brandId)
+        Brand brand = catalog.brand(brandId)
                 .orElseThrow(() -> new BusinessRuleViolationException("Unknown brand '%s'".formatted(brandId)));
-        CarModel model = carModelRepository.findById(modelId)
+        CarModel model = catalog.model(modelId)
                 .filter(candidate -> candidate.brandId().equals(brandId))
                 .orElseThrow(() -> new BusinessRuleViolationException(
                         "Model '%s' does not exist for brand %s".formatted(modelId, brand.name())));

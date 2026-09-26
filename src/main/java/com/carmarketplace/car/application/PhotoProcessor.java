@@ -2,7 +2,9 @@ package com.carmarketplace.car.application;
 
 import com.carmarketplace.car.domain.PhotoVariant;
 import com.carmarketplace.common.domain.BusinessRuleViolationException;
+import com.carmarketplace.common.domain.ServiceBusyException;
 import net.coobird.thumbnailator.Thumbnails;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.IIOImage;
@@ -20,10 +22,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class PhotoProcessor {
@@ -31,9 +36,14 @@ public class PhotoProcessor {
     public static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024;
     static final long MAX_PIXELS = 40_000_000L;
     private static final float JPEG_QUALITY = 0.85f;
+    private static final Duration MAX_WAIT_FOR_PROCESSING = Duration.ofSeconds(20);
+    private static final Duration RETRY_AFTER = Duration.ofSeconds(10);
 
-    public PhotoProcessor() {
+    private final Semaphore processingSlots;
+
+    public PhotoProcessor(@Value("${app.photos.max-concurrent-processing:4}") int maxConcurrentProcessing) {
         ImageIO.scanForPlugins();
+        this.processingSlots = new Semaphore(maxConcurrentProcessing, true);
     }
 
     public ProcessedPhoto process(PhotoUpload upload) {
@@ -44,6 +54,27 @@ public class PhotoProcessor {
         ensureSupportedFormat(upload);
         ensureReasonableDimensions(upload);
 
+        acquireProcessingSlot();
+        try {
+            return decodeAndResize(upload);
+        } finally {
+            processingSlots.release();
+        }
+    }
+
+    private void acquireProcessingSlot() {
+        try {
+            if (!processingSlots.tryAcquire(MAX_WAIT_FOR_PROCESSING.toMillis(), TimeUnit.MILLISECONDS)) {
+                throw new ServiceBusyException("Too many photos are being processed right now; retry shortly",
+                        RETRY_AFTER);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ServiceBusyException("Photo processing was interrupted; retry shortly", RETRY_AFTER);
+        }
+    }
+
+    private static ProcessedPhoto decodeAndResize(PhotoUpload upload) {
         BufferedImage image = flattenOnWhite(readApplyingOrientation(upload));
         Map<PhotoVariant, byte[]> variants = new EnumMap<>(PhotoVariant.class);
         BufferedImage largest = image;

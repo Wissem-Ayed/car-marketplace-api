@@ -58,6 +58,7 @@ public class CarPhotoController {
     @ApiResponse(responseCode = "413", description = "A file is larger than 10 MB")
     @ApiResponse(responseCode = "422",
             description = "Unsupported or unreadable image, too many pixels, or more than 10 photos in total")
+    @ApiResponse(responseCode = "503", description = "Too many photos are being processed; retry after `Retry-After` seconds")
     public CarResponse uploadPhotos(
             @Parameter(description = CAR_ID, example = CAR_ID_EXAMPLE) @PathVariable String carId,
             @Parameter(description = "Image files") @RequestPart("files") List<MultipartFile> files,

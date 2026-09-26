@@ -12,4 +12,8 @@ public record CarModel(
         @Indexed String brandId,
         String name,
         List<Generation> generations) {
+
+    public CarModel {
+        generations = generations == null ? List.of() : List.copyOf(generations);
+    }
 }

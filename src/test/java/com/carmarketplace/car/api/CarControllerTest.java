@@ -9,10 +9,13 @@ import com.carmarketplace.car.domain.CarSearchCriteria;
 import com.carmarketplace.car.domain.CarStatus;
 import com.carmarketplace.car.domain.Equipment;
 import com.carmarketplace.car.domain.FuelType;
+import com.carmarketplace.car.domain.Governorate;
 import com.carmarketplace.car.domain.IllegalCarStateException;
 import com.carmarketplace.common.api.ProblemDetailsSecurityHandler;
 import com.carmarketplace.common.domain.BusinessRuleViolationException;
+import com.carmarketplace.common.domain.PreconditionFailedException;
 import com.carmarketplace.config.SecurityConfig;
+import com.carmarketplace.config.SearchConfig;
 import com.carmarketplace.config.WebConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +46,11 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
 
 @WebMvcTest(CarController.class)
-@Import({CarResponseMapper.class, SecurityConfig.class, ProblemDetailsSecurityHandler.class, WebConfig.class})
+@Import({CarResponseMapper.class, SecurityConfig.class, ProblemDetailsSecurityHandler.class, WebConfig.class,
+        SearchConfig.class})
 class CarControllerTest {
 
-    private final Car car = aCar().id("abc123").build();
+    private final Car car = aCar().id("abc123").version(3).build();
 
     @Autowired
     private MockMvcTester mvc;
@@ -97,7 +101,7 @@ class CarControllerTest {
 
     @Test
     void updateReturns403WhenTheUserIsNotTheSeller() {
-        given(carService.updateCar(eq("abc123"), any(), any())).willThrow(new CarAccessDeniedException("abc123"));
+        given(carService.updateCar(eq("abc123"), any(), any(), any())).willThrow(new CarAccessDeniedException("abc123"));
 
         assertThat(put("/api/v1/cars/abc123", CarJson.VALID))
                 .hasStatus(HttpStatus.FORBIDDEN)
@@ -171,19 +175,24 @@ class CarControllerTest {
         PageRequest defaultPage = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "id"));
         CarSearchCriteria expectedCriteria = new CarSearchCriteria(
                 "bmw", null, null, null, null, 2018, null, 100000,
-                FuelType.DIESEL, null, null, null, CarStatus.AVAILABLE, List.of(Equipment.ABS, Equipment.CAMERA_360), null);
+                FuelType.DIESEL, null, null, null, CarStatus.AVAILABLE, List.of(Equipment.ABS, Equipment.CAMERA_360), null,
+                List.of(Governorate.TUNIS, Governorate.ARIANA));
         given(carService.getCars(any(), any())).willReturn(new PageImpl<>(List.of(car), defaultPage, 1));
 
         assertThat(mvc.get().uri("/api/v1/cars?brandId=bmw&minYear=2018&maxMileageKm=100000"
-                        + "&fuelType=DIESEL&status=AVAILABLE&equipment=ABS&equipment=CAMERA_360"))
+                        + "&fuelType=DIESEL&status=AVAILABLE&equipment=ABS&equipment=CAMERA_360&governorate=TUNIS,ARIANA"))
                 .hasStatusOk()
-                .bodyJson().extractingPath("$.page.totalElements").isEqualTo(1);
+                .bodyJson()
+                .satisfies(json -> {
+                    assertThat(json).extractingPath("$.page.totalElements").isEqualTo(1);
+                    assertThat(json).extractingPath("$.page.totalElementsExact").isEqualTo(true);
+                });
         then(carService).should().getCars(eq(expectedCriteria), eq(defaultPage));
     }
 
     @Test
     void updateReturns409WhenTheCarIsSold() {
-        given(carService.updateCar(eq("abc123"), any(), any()))
+        given(carService.updateCar(eq("abc123"), any(), any(), any()))
                 .willThrow(new IllegalCarStateException("Car abc123 is sold and can no longer be edited"));
 
         assertThat(put("/api/v1/cars/abc123", CarJson.VALID))
@@ -192,7 +201,7 @@ class CarControllerTest {
 
     @Test
     void updateReturns409WhenSomeoneElseChangedTheCarMeanwhile() {
-        given(carService.updateCar(eq("abc123"), any(), any())).willThrow(new OptimisticLockingFailureException("stale"));
+        given(carService.updateCar(eq("abc123"), any(), any(), any())).willThrow(new OptimisticLockingFailureException("stale"));
 
         assertThat(put("/api/v1/cars/abc123", CarJson.VALID))
                 .hasStatus(HttpStatus.CONFLICT)
@@ -201,7 +210,8 @@ class CarControllerTest {
 
     @Test
     void changeStatusReturnsTheUpdatedCar() {
-        given(carService.changeStatus(eq("abc123"), eq(CarStatus.SOLD), any())).willReturn(aCar().id("abc123").status(CarStatus.SOLD).build());
+        given(carService.changeStatus(eq("abc123"), eq(CarStatus.SOLD), any(), any()))
+                .willReturn(aCar().id("abc123").version(4).status(CarStatus.SOLD).build());
 
         assertThat(mvc.patch().uri("/api/v1/cars/abc123/status").with(loggedInAs(SELLER_1))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"status\": \"SOLD\"}"))
@@ -219,12 +229,12 @@ class CarControllerTest {
     @Test
     void deleteReturns204() {
         assertThat(mvc.delete().uri("/api/v1/cars/abc123").with(loggedInAs(SELLER_1))).hasStatus(HttpStatus.NO_CONTENT);
-        then(carService).should().deleteCar("abc123", SELLER_1);
+        then(carService).should().deleteCar("abc123", SELLER_1, null);
     }
 
     @Test
     void deleteReturns404WhenTheCarDoesNotExist() {
-        willThrow(new CarNotFoundException("unknown")).given(carService).deleteCar(eq("unknown"), any());
+        willThrow(new CarNotFoundException("unknown")).given(carService).deleteCar(eq("unknown"), any(), any());
 
         assertThat(mvc.delete().uri("/api/v1/cars/unknown").with(loggedInAs(SELLER_1))).hasStatus(HttpStatus.NOT_FOUND);
     }
@@ -235,5 +245,73 @@ class CarControllerTest {
 
     private MockMvcTester.MockMvcRequestBuilder put(String uri, String json) {
         return mvc.put().uri(uri).with(loggedInAs(SELLER_1)).contentType(MediaType.APPLICATION_JSON).content(json);
+    }
+
+    @Test
+    void searchShowsOnlyAvailableListingsByDefault() {
+        given(carService.getCars(any(), any())).willReturn(new PageImpl<>(List.of(car), PageRequest.of(0, 20), 1));
+
+        assertThat(mvc.get().uri("/api/v1/cars")).hasStatusOk();
+        then(carService).should().getCars(argThat(criteria -> criteria.status() == CarStatus.AVAILABLE), any());
+    }
+
+    @Test
+    void rejectsSortingOnFieldsThatAreNotIndexed() {
+        assertThat(mvc.get().uri("/api/v1/cars?sort=description,asc"))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .bodyJson().extractingPath("$.detail")
+                .isEqualTo("Cannot sort by 'description'; sortable fields are id, price.amount, vehicle.year, history.mileageKm");
+        then(carService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void rejectsPagesBeyondTheLastServedOne() {
+        assertThat(mvc.get().uri("/api/v1/cars?page=100"))
+                .hasStatus(HttpStatus.BAD_REQUEST)
+                .bodyJson().extractingPath("$.detail")
+                .isEqualTo("Only the first 100 pages are available; narrow the search with filters");
+    }
+
+    @Test
+    void getReturnsAnETagAndAnswers304WhenNothingChanged() {
+        given(carService.getCar("abc123")).willReturn(car);
+
+        assertThat(mvc.get().uri("/api/v1/cars/abc123")).hasStatusOk().hasHeader("ETag", "\"3\"");
+        assertThat(mvc.get().uri("/api/v1/cars/abc123").header("If-None-Match", "\"3\""))
+                .hasStatus(HttpStatus.NOT_MODIFIED);
+    }
+
+    @Test
+    void passesTheIfMatchVersionToTheServiceAndReturnsTheNewETag() {
+        given(carService.updateCar(eq("abc123"), any(), any(), eq(3L))).willReturn(aCar().id("abc123").version(4).build());
+
+        assertThat(mvc.put().uri("/api/v1/cars/abc123").with(loggedInAs(SELLER_1)).header("If-Match", "\"3\"")
+                .contentType(MediaType.APPLICATION_JSON).content(CarJson.VALID))
+                .hasStatusOk()
+                .hasHeader("ETag", "\"4\"");
+    }
+
+    @Test
+    void returns412WhenTheListingChangedSinceTheIfMatchVersion() {
+        given(carService.changeStatus(eq("abc123"), any(), any(), eq(2L)))
+                .willThrow(new PreconditionFailedException("Car abc123 has changed since version 2"));
+
+        assertThat(mvc.patch().uri("/api/v1/cars/abc123/status").with(loggedInAs(SELLER_1)).header("If-Match", "\"2\"")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"status\": \"SOLD\"}"))
+                .hasStatus(HttpStatus.PRECONDITION_FAILED)
+                .bodyJson().extractingPath("$.title").isEqualTo("Precondition failed");
+    }
+
+    @Test
+    void unexpectedErrorsUseTheProblemDetailsFormatWithoutLeakingInternals() {
+        given(carService.getCar("abc123")).willThrow(new IllegalStateException("database password is hunter2"));
+
+        assertThat(mvc.get().uri("/api/v1/cars/abc123"))
+                .hasStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+                .bodyJson()
+                .satisfies(json -> {
+                    assertThat(json).extractingPath("$.title").isEqualTo("Internal error");
+                    assertThat(json).extractingPath("$.detail").asString().doesNotContain("hunter2");
+                });
     }
 }

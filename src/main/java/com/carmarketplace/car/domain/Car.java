@@ -21,11 +21,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Document(collection = "cars")
-@CompoundIndex(name = "brand_model", def = "{'vehicle.brand.id': 1, 'vehicle.model.id': 1}")
-@CompoundIndex(name = "price", def = "{'price.amount': 1}")
-@CompoundIndex(name = "year", def = "{'vehicle.year': 1}")
+@CompoundIndex(name = "status_newest", def = "{'status': 1, '_id': -1}")
+@CompoundIndex(name = "status_brand_model_newest",
+        def = "{'status': 1, 'vehicle.brand.id': 1, 'vehicle.model.id': 1, '_id': -1}")
+@CompoundIndex(name = "status_governorate_newest", def = "{'status': 1, 'location.governorate': 1, '_id': -1}")
+@CompoundIndex(name = "status_price", def = "{'status': 1, 'price.amount': 1}")
+@CompoundIndex(name = "status_year", def = "{'status': 1, 'vehicle.year': 1}")
+@CompoundIndex(name = "status_mileage", def = "{'status': 1, 'history.mileageKm': 1}")
+@CompoundIndex(name = "seller_newest", def = "{'seller.id': 1, '_id': -1}")
 @CompoundIndex(name = "equipment", def = "{'equipment': 1}")
-@CompoundIndex(name = "seller", def = "{'seller.id': 1}")
 public record Car(
         @Id String id,
         Seller seller,
@@ -33,6 +37,7 @@ public record Car(
         Engine engine,
         History history,
         Price price,
+        Location location,
         Set<Equipment> equipment,
         String description,
         List<Photo> photos,
@@ -49,6 +54,7 @@ public record Car(
         Objects.requireNonNull(engine, "engine must not be null");
         Objects.requireNonNull(history, "history must not be null");
         Objects.requireNonNull(price, "price must not be null");
+        Objects.requireNonNull(location, "location must not be null");
         Objects.requireNonNull(status, "status must not be null");
         equipment = equipment == null || equipment.isEmpty()
                 ? Set.of()
@@ -58,15 +64,15 @@ public record Car(
     }
 
     public static Car create(Seller seller, Vehicle vehicle, Engine engine, History history, Price price,
-                             Set<Equipment> equipment, String description) {
-        return new Car(null, seller, vehicle, engine, history, price, equipment, description, List.of(),
+                             Location location, Set<Equipment> equipment, String description) {
+        return new Car(null, seller, vehicle, engine, history, price, location, equipment, description, List.of(),
                 CarStatus.AVAILABLE, null, null, null);
     }
 
     public Car update(Vehicle vehicle, Engine engine, History history, Price price,
-                      Set<Equipment> equipment, String description) {
+                      Location location, Set<Equipment> equipment, String description) {
         ensureEditable();
-        return new Car(id, seller, vehicle, engine, history, price, equipment, description, photos,
+        return new Car(id, seller, vehicle, engine, history, price, location, equipment, description, photos,
                 status, version, createdAt, updatedAt);
     }
 
@@ -78,7 +84,7 @@ public record Car(
         if (!status.canTransitionTo(target)) {
             throw new IllegalCarStateException("Car %s cannot move from %s to %s".formatted(id, status, target));
         }
-        return new Car(id, seller, vehicle, engine, history, price, equipment, description, photos,
+        return new Car(id, seller, vehicle, engine, history, price, location, equipment, description, photos,
                 target, version, createdAt, updatedAt);
     }
 
@@ -126,7 +132,7 @@ public record Car(
     }
 
     private Car withPhotos(List<Photo> newPhotos) {
-        return new Car(id, seller, vehicle, engine, history, price, equipment, description, newPhotos,
+        return new Car(id, seller, vehicle, engine, history, price, location, equipment, description, newPhotos,
                 status, version, createdAt, updatedAt);
     }
 

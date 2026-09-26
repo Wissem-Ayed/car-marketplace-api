@@ -7,7 +7,9 @@ import com.carmarketplace.car.domain.Condition;
 import com.carmarketplace.car.domain.Engine;
 import com.carmarketplace.car.domain.Equipment;
 import com.carmarketplace.car.domain.FuelType;
+import com.carmarketplace.car.domain.Governorate;
 import com.carmarketplace.car.domain.History;
+import com.carmarketplace.car.domain.Location;
 import com.carmarketplace.car.domain.Origin;
 import com.carmarketplace.car.domain.Price;
 import com.carmarketplace.car.domain.Transmission;
@@ -40,6 +42,9 @@ public record CarRequest(
         @Schema(description = "Asking price")
         @NotNull @Valid PriceRequest price,
 
+        @Schema(description = "Where the car can be seen")
+        @NotNull @Valid LocationRequest location,
+
         @ArraySchema(
                 arraySchema = @Schema(
                         description = "Equipment codes, see `GET /api/v1/equipment`. Duplicates are ignored.",
@@ -53,7 +58,7 @@ public record CarRequest(
 
     public CarDraft toDraft() {
         return new CarDraft(vehicle.toSpec(), engine.toEngine(), history.toHistory(), price.toPrice(),
-                equipment, description);
+                location.toLocation(), equipment, description);
     }
 
     @Schema(name = "VehicleRequest")
@@ -145,6 +150,19 @@ public record CarRequest(
 
         History toHistory() {
             return new History(mileageKm, mileageCertified, condition, origin, registeredInTunisia, previousOwners);
+        }
+    }
+
+    @Schema(name = "LocationRequest")
+    public record LocationRequest(
+            @Schema(description = "Governorate, see `GET /api/v1/governorates`", example = "SFAX")
+            @NotNull Governorate governorate,
+
+            @Schema(description = "City or delegation, free text", example = "Sakiet Ezzit", nullable = true)
+            @Size(max = 60) String city) {
+
+        Location toLocation() {
+            return new Location(governorate, city);
         }
     }
 

@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PhotoProcessorTest {
 
-    private final PhotoProcessor processor = new PhotoProcessor();
+    private final PhotoProcessor processor = new PhotoProcessor(2);
 
     @Test
     void createsThreeJpegSizesThatFitTheirLimits() {
